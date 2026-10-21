@@ -4,6 +4,7 @@ import UserRepository from '../../../src/repositories/UserRepository.js';
 import { DBPool } from '../../../src/config/dbconnection.js';
 
 import { jest } from '@jest/globals';
+import { afterAll } from '@jest/globals';
 import bcrypt from 'bcrypt';
 import fs from 'fs/promises';
 import path from 'path';
@@ -69,13 +70,6 @@ describe('ProfileController', () => {
         );
     });
 
-    afterAll(async () => {
-
-        await DBPool.query(
-            `DELETE FROM users WHERE user_id = ?`,
-            [testUser.user_id]
-        );
-    });
 
     describe('searchUsers', () => {
         test('Debe devolver los usuarios que coinciden con la búsqueda y que pueden ser añadidos a la tarea', async () => {
@@ -103,13 +97,11 @@ describe('ProfileController', () => {
             let taskId;
 
             try {
-                // Limpiar posibles restos de ejecuciones anteriores
                 await DBPool.query(
                     'DELETE FROM users WHERE user_id IN (?, ?)',
                     [searchUser.user_id, excludedUser.user_id]
                 );
 
-                // Crear usuarios de prueba
                 await DBPool.query(
                     `
                     INSERT INTO users (
@@ -162,7 +154,6 @@ describe('ProfileController', () => {
                     ]
                 );
 
-                // Crear una tarea perteneciente al usuario actual
                 const [taskResult] = await DBPool.query(
                     `
                     INSERT INTO tasks (
@@ -189,7 +180,6 @@ describe('ProfileController', () => {
 
                 taskId = taskResult.insertId;
 
-                // El usuario excluido ya colabora en la tarea
                 await DBPool.query(
                     `
                     INSERT INTO user_tasks (user_id, task_id)
@@ -198,7 +188,6 @@ describe('ProfileController', () => {
                     [excludedUser.user_id, taskId]
                 );
 
-                // Request que también debería impedir que aparezca
                 await DBPool.query(
                     `
                     INSERT INTO requests_task (
@@ -249,8 +238,6 @@ describe('ProfileController', () => {
                     avatar_url: null
                 });
 
-                // El usuario que ya colabora/no puede ser añadido
-                // no debe aparecer en los resultados
                 expect(
                     response.users.some(
                         user => user.user_id === excludedUser.user_id
@@ -258,7 +245,6 @@ describe('ProfileController', () => {
                 ).toBe(false);
 
             } finally {
-                // Limpiar relaciones antes de eliminar los usuarios
                 if (taskId) {
                     await DBPool.query(
                         'DELETE FROM requests_task WHERE task_id = ?',
@@ -462,10 +448,8 @@ describe('ProfileController', () => {
 
             const storedPassword = rows[0].password;
 
-            // La contraseña almacenada debe ser diferente a la anterior
             expect(storedPassword).not.toBe(currentPassword);
 
-            // Y debe ser un hash bcrypt válido para la nueva contraseña
             const passwordMatches = await bcrypt.compare(
                 newPassword,
                 storedPassword
@@ -490,13 +474,10 @@ describe('ProfileController', () => {
                 avatarFilename
             );
 
-            // Nos aseguramos de que exista el directorio
             await fs.mkdir(avatarDir, { recursive: true });
 
-            // Creamos un fichero de prueba
             await fs.writeFile(avatarPath, 'avatar de prueba');
 
-            // Asociamos el avatar al usuario en MySQL
             await DBPool.query(
                 `
                 UPDATE users
@@ -528,7 +509,6 @@ describe('ProfileController', () => {
                 avatar_url: null
             });
 
-            // Comprobamos que la BD ya no tiene avatar
             const [rows] = await DBPool.query(
                 `
                 SELECT avatar_url
@@ -541,7 +521,6 @@ describe('ProfileController', () => {
             expect(rows).toHaveLength(1);
             expect(rows[0].avatar_url).toBeNull();
 
-            // Comprobamos que el fichero realmente fue eliminado
             await expect(
                 fs.access(avatarPath)
             ).rejects.toThrow();
@@ -613,7 +592,6 @@ describe('ProfileController', () => {
 
             expect(response.user).toEqual({});
 
-            // Comprobamos que realmente desapareció de MySQL
             const [rows] = await DBPool.query(
                 'SELECT user_id FROM users WHERE user_id = ?',
                 [deleteUser.user_id]
@@ -622,5 +600,12 @@ describe('ProfileController', () => {
             expect(rows).toHaveLength(0);
         });
     });
-});
+    afterAll(async () => {
 
+        await DBPool.query(
+            `DELETE FROM users WHERE user_id = ?`,
+            [testUser.user_id]
+        );
+        await DBPool.end();
+    });
+});

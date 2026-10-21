@@ -17,25 +17,6 @@ const createTestUser = (suffix) => ({
 
 describe('UserRepository', () => {
 
-    afterAll(async () => {
-        await DBPool.end();
-    });
-
-/*
-    describe('connection', () => {
-
-        test('debería conectarse correctamente a la base de datos de test', async () => {
-
-            const [rows] = await DBPool.query(
-                'SELECT 1 AS resultado'
-            );
-
-            expect(rows[0].resultado).toBe(1);
-        });
-
-    });
-*/
-
     describe('register', () => {
 
         test('debe registrar un usuario correctamente', async () => {
@@ -314,6 +295,10 @@ describe('UserRepository', () => {
             expect(result).toBe(false);
         });
 
+    });
+
+    afterAll(async () => {
+        await DBPool.end();
     });
 
 });

@@ -58,10 +58,6 @@ const insertTestUser = async (user) => {
 
 describe('TaskRepository', () => {
 
-    afterAll(async () => {
-        await DBPool.end();
-    });
-
 
     describe('create', () => {
 
@@ -922,6 +918,10 @@ describe('TaskRepository', () => {
             );
         });
 
+    });
+
+    afterAll(async () => {
+        await DBPool.end();
     });
 
 });
