@@ -10,8 +10,9 @@
     "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
     "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
     "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unitarios",
-    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integracion --setupFiles=./tests/integracion/setup.js"
+    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
+    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration --setupFiles=./tests/integration/setup.js",
+    "test:api": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/api --setupFiles=./tests/api/setup.js"
   },
   "repository": {
     "type": "git",
@@ -39,6 +40,7 @@
     "cross-env": "^10.1.0",
     "dotenv": "16.4.7",
     "jest": "^30.4.2",
-    "nodemon": "3.1.9"
+    "nodemon": "3.1.9",
+    "supertest": "^7.3.1"
   }
 }

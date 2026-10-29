@@ -102,22 +102,45 @@ class TaskController {
     }
   }
   getTareaById = async (req, res) => {
-
     try {
-      const user = req.user;
-      
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+        const user = req.user;
 
-      const { id } = req.params;
-      const task = await this.tareasService.getTareaById(id,user.user_id);
+        if (!user) {
+            return res.status(401).json({
+                error: 'Usuario no autenticado'
+            });
+        }
 
-      if (!task) return res.status(404).json({ error: 'Tarea no encontrada' });
+        const { id } = req.params;
+        const task = await this.tareasService.getTareaById(
+            id,
+            user.user_id
+        );
 
-      res.json({ message: 'Tarea encontrada.', task });
+        if (!task) {
+            return res.status(404).json({
+                error: 'Tarea no encontrada'
+            });
+        }
+
+        return res.json({
+            message: 'Tarea encontrada.',
+            task
+        });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+        if (error.message === 'Tarea no encontrada') {
+            return res.status(404).json({
+                error: 'Tarea no encontrada'
+            });
+        }
+
+        console.error('Error en getTareaById:', error);
+
+        return res.status(500).json({
+            error: 'Error interno del servidor'
+        });
     }
-  }
+  };
   getPriorities = async (req, res) => {
 
     try {
@@ -157,7 +180,16 @@ class TaskController {
       
       res.json({ message: 'Tarea actualizada exitosamente.', task: tareaActualizada });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      //res.status(400).json({ error: error.message });
+      if (error.message === 'Tarea no encontrada o propietario incorrecto') {
+          return res.status(404).json({
+              error: 'Tarea no encontrada o propietario incorrecto'
+          });
+      }
+
+      return res.status(500).json({
+          error: 'Error interno del servidor'
+      });
     }
   }
 
