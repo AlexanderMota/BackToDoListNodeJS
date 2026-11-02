@@ -9,13 +9,12 @@ const db = container.resolve('DBPool');
 const app = container.resolve('app');
 db.getConnection()
   .then(connection => {
-    console.log('✅ Conexión a la base de datos establecida');
+    console.log('Conexión a la base de datos establecida');
     connection.release();
 
-    // Iniciar servidor Express
     app.start();
   })
   .catch(error => {
-    console.error('❌ Error al conectar con la base de datos:', error);
-    process.exit(1); // Salir si hay error de conexión
+    console.error('Error al conectar con la base de datos:', error);
+    process.exit(1);
   });
