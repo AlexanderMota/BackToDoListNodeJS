@@ -6,51 +6,52 @@ import { randomUUID } from 'node:crypto';
 import container from '../../src/container.js';
 import { DBPool } from '../../src/config/index.js';
 
-const server = container.resolve('app');
-const app = server.app;
-
-const testUser = {
-  user_id: randomUUID(),
-  name: 'API',
-  lastname: 'Test',
-  username: `api_test_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
-  email: `api.test.${randomUUID()}@example.com`,
-  phone: null,
-  password: 'TestPassword123!'
-};
-
-beforeAll(async () => {
-  const hashedPassword = await bcrypt.hash(testUser.password, 10);
-
-  await DBPool.query(
-    `INSERT INTO users (
-      user_id, name, lastname, username, email, phone, password, role_id
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      testUser.user_id,
-      testUser.name,
-      testUser.lastname,
-      testUser.username,
-      testUser.email,
-      testUser.phone,
-      hashedPassword,
-      5
-    ]
-  );
-});
-
-afterAll(async () => {
-  try {
-    await DBPool.query(
-      'DELETE FROM users WHERE user_id = ?',
-      [testUser.user_id]
-    );
-  } finally {
-    await DBPool.end();
-  }
-});
 
 describe('API - Autenticación', () => {
+
+  const server = container.resolve('app');
+  const app = server.app;
+
+  const testUser = {
+    user_id: randomUUID(),
+    name: 'API',
+    lastname: 'Test',
+    username: `api_test_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
+    email: `api.test.${randomUUID()}@example.com`,
+    phone: null,
+    password: 'TestPassword123!'
+  };
+  
+  beforeAll(async () => {
+    const hashedPassword = await bcrypt.hash(testUser.password, 10);
+
+    await DBPool.query(
+      `INSERT INTO users (
+        user_id, name, lastname, username, email, phone, password, role_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        testUser.user_id,
+        testUser.name,
+        testUser.lastname,
+        testUser.username,
+        testUser.email,
+        testUser.phone,
+        hashedPassword,
+        5
+      ]
+    );
+  });
+
+  afterAll(async () => {
+    try {
+      await DBPool.query(
+        'DELETE FROM users WHERE user_id = ?',
+        [testUser.user_id]
+      );
+    } finally {
+      await DBPool.end();
+    }
+  });
 
   describe('GET /auth/me', () => {
 
