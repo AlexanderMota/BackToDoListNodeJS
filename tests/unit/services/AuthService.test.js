@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import bcrypt from 'bcrypt';
 const mockJwtSign = jest.fn();
 
 jest.unstable_mockModule('jsonwebtoken', () => ({
@@ -89,12 +90,15 @@ describe('AuthService', () => {
             const email = 'alex@test.com'
             const password = 'contraseña123'
 
+    
+            const hashedPassword = await bcrypt.hash(password, 10);
+
             mockUserValidations.validateEmail.mockResolvedValue(true);
 
             mockUserRepository.findByEmail.mockResolvedValue({
                 user_id:'123',
                 email:email, 
-                password:password,
+                password:hashedPassword,
                 role:'user'
             });
 

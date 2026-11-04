@@ -37,7 +37,6 @@ describe('AuthController', () => {
                 password: 'password123'
             };
 
-            // Limpiar por si el test se ejecutó anteriormente
             await DBPool.query(
                 `
                 DELETE FROM users
@@ -69,7 +68,6 @@ describe('AuthController', () => {
             expect(response.message).toBe('Perfil creado.');
             expect(response.user).toBeDefined();
 
-            // comprobar que el usuario existe realmente en MySQL
             const [rows] = await DBPool.query(
                 `
                 SELECT
@@ -98,10 +96,8 @@ describe('AuthController', () => {
             expect(createdUser.phone).toBe(user.phone);
             expect(createdUser.role_id).toBe(5);
 
-            // La contraseña almacenada NO debe ser la original
             expect(createdUser.password).not.toBe(originalPassword);
 
-            // Y debe corresponder a la contraseña original
             const passwordMatches = await bcrypt.compare(
                 originalPassword,
                 createdUser.password
@@ -109,7 +105,6 @@ describe('AuthController', () => {
 
             expect(passwordMatches).toBe(true);
 
-            // Limpiar
             await DBPool.query(
                 'DELETE FROM users WHERE user_id = ?',
                 [createdUser.user_id]

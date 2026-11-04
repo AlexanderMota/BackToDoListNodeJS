@@ -55,22 +55,22 @@ describe('API - Autenticación', () => {
 
   describe('GET /auth/me', () => {
 
-    test('Sin cookie devuelve 403', async () => {
+    test('Sin cookie devuelve 401', async () => {
       const response = await request(app)
         .get('/auth/me');
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401);
       expect(response.body).toEqual({
         error: 'No autenticado'
       });
     });
 
-    test('Con token inválido devuelve 400', async () => {
+    test('Con token inválido devuelve 401', async () => {
       const response = await request(app)
         .get('/auth/me')
         .set('Cookie', 'access_token=token_invalido');
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
       expect(response.body).toEqual({
         error: 'Token inválido o expirado'
       });
@@ -110,7 +110,7 @@ describe('API - Autenticación', () => {
       });
     });
 
-    test('Con usuario inexistente devuelve 401', async () => {
+    test('Con usuario inexistente devuelve 404', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -120,11 +120,11 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('error');
     });
 
-    test('Con contraseña incorrecta devuelve 401', async () => {
+    test('Con contraseña incorrecta devuelve 404', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -134,7 +134,7 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(404);
       expect(response.body).toEqual({
         error: 'Contraseña incorrecta'
       });
@@ -176,11 +176,11 @@ describe('API - Autenticación', () => {
 
   describe('POST /auth/logout', () => {
 
-    test('Sin cookie devuelve 403', async () => {
+    test('Sin cookie devuelve 401', async () => {
       const response = await request(app)
         .post('/auth/logout');
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401);
       expect(response.body).toEqual({
         error: 'No autenticado'
       });
@@ -250,7 +250,7 @@ describe('API - Autenticación', () => {
       const finalResponse = await agent
         .get('/auth/me');
 
-      expect(finalResponse.status).toBe(403);
+      expect(finalResponse.status).toBe(401);
       expect(finalResponse.body).toEqual({
         error: 'No autenticado'
       });

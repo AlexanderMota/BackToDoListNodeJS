@@ -5,6 +5,9 @@ import path from 'path';
 
 export default class Server {
   constructor({ routes }) {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET no está configurado');
+    }
     this.app = express()
       .use(cookieParser())
       .use(express.json())

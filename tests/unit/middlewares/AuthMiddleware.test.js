@@ -36,12 +36,12 @@ describe('authMiddleware', () => {
 
     describe('cuando no existe token', () => {
 
-        test('Debe devolver 403 si no existe el token', () => {
+        test('Debe devolver 401 si no existe el token', () => {
 
             authMiddleware(mockRequest, mockResponse, mockNext);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(403);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
 
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
@@ -52,14 +52,14 @@ describe('authMiddleware', () => {
             expect(mockVerify).not.toHaveBeenCalled();
         });
 
-        test('Debe devolver 403 si req.cookies no existe', () => {
+        test('Debe devolver 401 si req.cookies no existe', () => {
 
             mockRequest = {};
 
             authMiddleware(mockRequest, mockResponse, mockNext);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(403);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
 
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
@@ -102,7 +102,7 @@ describe('authMiddleware', () => {
             expect(mockResponse.json).not.toHaveBeenCalled();
         });
 
-        test('Debe devolver 400 si el token es inválido o ha expirado', () => {
+        test('Debe devolver 401 si el token es inválido o ha expirado', () => {
 
             mockRequest.cookies.access_token = 'token-invalido';
 
@@ -119,7 +119,7 @@ describe('authMiddleware', () => {
             );
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
 
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({

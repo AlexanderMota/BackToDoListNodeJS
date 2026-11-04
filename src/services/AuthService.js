@@ -25,9 +25,9 @@ class AuthService {
 
     // MUY IMPORTANTE: Reactivar esta linea ya que es la que compara la contraseña introducida por el usuario con la contraseña hasheada que debe haber almacenada en la base de datos. Desactivamos solo para pruebas.
     //if (!this.userValidations.validateComparePassword(password, user.password)) throw new Error('Contraseña incorrecta');
-    if (user.password.startsWith('$2b$')) 
+    //if (user.password.startsWith('$2b$')) 
       valid = await bcrypt.compare(password, user.password);
-    else valid = password === user.password;
+    //else valid = password === user.password;
     
 
     if (!valid) throw new Error('Contraseña incorrecta');

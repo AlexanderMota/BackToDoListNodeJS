@@ -232,10 +232,10 @@ describe('API - Tasks', () => {
       ['POST', '/tareas'],
       ['PUT', '/tareas/tarea/1'],
       ['DELETE', '/tareas/tarea/1']
-    ])('%s %s sin cookie devuelve 403', async (method, endpoint) => {
+    ])('%s %s sin cookie devuelve 401', async (method, endpoint) => {
       const response = await request(app)[method.toLowerCase()](endpoint);
 
-      expect(response.status).toBe(403);
+      expect(response.status).toBe(401);
       expect(response.body).toEqual({
         error: 'No autenticado'
       });

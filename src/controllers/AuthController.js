@@ -12,7 +12,7 @@ class AuthController {
 
       res.status(201).json({ message: 'Perfil creado.', user: newUser });
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(404).json({ error: error.message });
     }
   };
 
@@ -35,7 +35,7 @@ class AuthController {
         avatar_url: userData.avatar_url,
         role: user.role }});
     } catch (error) {
-      res.status(406).json({ error: error.message });
+      res.status(404).json({ error: error.message });
     }
   }
   
@@ -43,7 +43,7 @@ class AuthController {
     try {
       const { user } = req.body;
 
-      if (!user.email || !user.password) return res.status(400).json({ error: 'Email y contraseña son requeridos' });
+      if (!user || !user.email || !user.password) return res.status(400).json({ error: 'Email y contraseña son requeridos' });
 
       const token = await this.authService.login(user.email, user.password);
       let maxAge = 0;
@@ -60,16 +60,21 @@ class AuthController {
       res.json({message: 'Login exitoso.', user: {email:user.email}});
 
     } catch (error) {
-      res.status(401).json({ error: error.message });
+      res.status(404).json({ error: error.message });
     }
   }
 
   logout = async (req, res) => {
     try {
-      res.clearCookie('access_token');
+      res.clearCookie('access_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/'
+      });
       res.json({message: 'Logout exitoso.', user: {email: req.user.email}});
     } catch (error) {
-      res.status(400).json({ error: error.message });
+      res.status(404).json({ error: error.message });
     }
   }
 }

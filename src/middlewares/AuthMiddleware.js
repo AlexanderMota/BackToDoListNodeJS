@@ -4,7 +4,7 @@ export const authMiddleware = (req, res, next) => {
   const token = req.cookies?.access_token;
   
   if (!token) {
-    return res.status(403).json({ error: 'No autenticado' });
+    return res.status(401).json({ error: 'No autenticado' });
   }
 
   try {
@@ -14,6 +14,6 @@ export const authMiddleware = (req, res, next) => {
     
     next();
   } catch (err) {
-    return res.status(400).json({ error: 'Token inválido o expirado' });
+    return res.status(401).json({ error: 'Token inválido o expirado' });
   }
 };
