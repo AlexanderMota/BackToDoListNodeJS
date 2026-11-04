@@ -5,14 +5,14 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest",
-    "test:watch": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --watch",
-    "test:coverage": "cross-env NODE_OPTIONS=--experimental-vm-modules jest --coverage",
-    "test:unit": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
-    "test:integration": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/integration --setupFiles=./tests/integration/setup.js",
-    "test:api": "cross-env NODE_OPTIONS=--experimental-vm-modules jest tests/api --setupFiles=./tests/api/setup.js"
+    "start": "cross-env NODE_ENV=production node index.js",
+    "dev": "cross-env NODE_ENV=development nodemon index.js",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:watch": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --watch",
+    "test:coverage": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --coverage",
+    "test:unit": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest tests/unit",
+    "test:integration": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest tests/integration --setupFiles=./tests/integration/setup.js",
+    "test:api": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest tests/api --setupFiles=./tests/api/setup.js"
   },
   "repository": {
     "type": "git",
