@@ -39,13 +39,25 @@ class TaskRepository {
    
     return rows;
   }
-  async findSubTasks(parent_task_id) {
+  async findSubTasks(parent_task_id, user_id) {
+    await this.findById(parent_task_id, user_id);
+
     const [rows] = await this.DBPool.query(`
         SELECT *
-        FROM tasks 
-        WHERE parent_task_id = ?
-      `, [parent_task_id]
-    );
+        FROM tasks t
+        WHERE t.parent_task_id = ?
+        AND (
+            t.created_by = ?
+            OR t.visibility = 'public'
+            OR EXISTS (
+                SELECT 1
+                FROM user_tasks ut
+                WHERE ut.task_id = t.task_id
+                AND ut.user_id = ?
+            )
+        )
+    `, [parent_task_id, user_id, user_id]);
+
     return rows;
   }
   
@@ -53,13 +65,15 @@ class TaskRepository {
     const [rows] = await this.DBPool.query(`
       SELECT *
       FROM tasks
-      WHERE visibility = 'public' AND created_by <> ? AND NOT EXISTS (
+      WHERE visibility = 'public' 
+        AND created_by <> ? 
+        AND NOT EXISTS (
           SELECT 1
           FROM requests_task rt 
           WHERE rt.task_id = tasks.task_id
             AND rt.user_id = ?
-      )
-    `, [user_id, user_id]
+            AND rt.status IN ('pending', 'accepted')
+        )`, [user_id, user_id]
     );
     return rows;
   }
@@ -86,33 +100,23 @@ class TaskRepository {
   }
   async findById(task_id, user_id) {
 
-    const [tar] = await this.DBPool.query(`
-        SELECT *
-        FROM tasks
-        WHERE task_id = ?
-      `, [task_id]
-    );
-
-    if (!tar.length) {
-      throw new Error("Tarea no encontrada");
-    }
-
     const [rows] = await this.DBPool.query(`
-        SELECT
-          t.*,
-          u.username,
-          u.avatar_url
-        FROM tasks t
-        JOIN users u
-          ON u.user_id = t.created_by
-        WHERE t.task_id = ? AND (
+      SELECT
+        t.*,
+        u.username,
+        u.avatar_url
+      FROM tasks t
+      JOIN users u
+        ON u.user_id = t.created_by
+      WHERE t.task_id = ?
+        AND (
           t.created_by = ?
           OR EXISTS (
             SELECT 1
             FROM user_tasks ut
             WHERE ut.task_id = t.task_id
               AND ut.user_id = ?
-          ) 
+          )
           OR EXISTS (
             SELECT 1
             FROM requests_task rt
@@ -120,29 +124,24 @@ class TaskRepository {
               AND rt.user_id = ?
               AND rt.status = 'pending'
           )
-          OR EXISTS (
-            SELECT 1
-            FROM tasks 
-            WHERE visibility = 'public' AND task_id = ?
-          )
+          OR t.visibility = 'public'
         )
-      `, [task_id, user_id, user_id, user_id, task_id]
+    `, [task_id, user_id, user_id, user_id]);
+
+    if (rows.length) return rows[0];
+
+    const [taskExists] = await this.DBPool.query(
+      'SELECT task_id FROM tasks WHERE task_id = ?',
+      [task_id]
     );
 
-    if (!rows.length) {
-      throw new Error("No tienes permiso para acceder a esta tarea");
+    if (!taskExists.length) {
+      throw new Error('Tarea no encontrada');
     }
-    
-    return rows.length ? rows[0] : null;
-  }/*
-  async findByOwnerId(owner_id) {
-    const [rows] = await this.DBPool.query('SELECT * FROM tasks WHERE created_by = ?', [owner_id]);
-    return rows.length ? rows[0] : null;
+
+    throw new Error('No tienes permiso para acceder a esta tarea');
   }
-  async findByParentId(parent_id) {
-    const [rows] = await this.DBPool.query('SELECT * FROM tasks WHERE parent_task_id = ?', [parent_id]);
-    return rows.length ? rows[0] : null;
-  }*/
+  
 
   async findPriorities() {
     const [rows] = await this.DBPool.query("SHOW COLUMNS FROM tasks LIKE 'priority'");
@@ -166,7 +165,7 @@ class TaskRepository {
   }
 
   async update(id, tarea, user_id) {
-    const { name, description, status, priority, parent_task_id, visibility } = tarea;
+    const { name, description, status, priority, visibility } = tarea;
     const [result] = await this.DBPool.query(`
         UPDATE tasks 
         SET 
@@ -174,7 +173,6 @@ class TaskRepository {
           description = ?, 
           status = ?, 
           priority = ?, 
-          parent_task_id = ?, 
           visibility = ?,
           updated_at = NOW() 
         WHERE task_id = ? AND created_by = ?
@@ -183,8 +181,7 @@ class TaskRepository {
         name, 
         description, 
         status, 
-        priority, 
-        parent_task_id, 
+        priority,
         visibility, 
         id, 
         user_id 

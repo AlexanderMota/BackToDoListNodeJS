@@ -526,7 +526,7 @@ describe('ProfileController', () => {
             ).rejects.toThrow();
         });
     });
-    describe('deletePerfil', () => {
+    describe('deleteProfile', () => {
         test('Debe eliminar el perfil del usuario', async () => {
 
             const deleteUser = {
@@ -539,7 +539,6 @@ describe('ProfileController', () => {
                 password: 'password123'
             };
 
-            // Nos aseguramos de que no exista de una ejecución anterior
             await DBPool.query(
                 'DELETE FROM users WHERE user_id = ?',
                 [deleteUser.user_id]
@@ -579,11 +578,19 @@ describe('ProfileController', () => {
 
             const res = {
                 json: jest.fn(),
-                status: jest.fn().mockReturnThis()
+                status: jest.fn().mockReturnThis(),
+                clearCookie: jest.fn().mockReturnThis()
             };
 
             await controller.deleteProfile(req, res);
 
+            expect(res.clearCookie).toHaveBeenCalledWith(
+                'access_token',
+                expect.objectContaining({
+                    httpOnly: true,
+                    path: '/'
+                })
+            );
             expect(res.json).toHaveBeenCalledTimes(1);
 
             const response = res.json.mock.calls[0][0];

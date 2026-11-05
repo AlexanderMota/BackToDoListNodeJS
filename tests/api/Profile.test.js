@@ -90,27 +90,43 @@ describe('API - Profile', () => {
 
   afterAll(async () => {
     try {
-      await DBPool.query(
-        'DELETE FROM users WHERE user_id IN (?, ?)',
-        [testUser.user_id, secondaryUser.user_id]
-      );
+        // Obtener las tareas creadas por los usuarios de prueba.
+        const [tasks] = await DBPool.query(
+            `
+            SELECT task_id
+            FROM tasks
+            WHERE created_by IN (?, ?)
+            `,
+            [testUser.user_id, secondaryUser.user_id]
+        );
 
-      // Limpiar posibles archivos de avatar de los usuarios de prueba
-      const files = await fs.readdir(avatarDirectory).catch(() => []);
+        // Eliminar las dependencias de las tareas.
+        for (const task of tasks) {
+            await DBPool.query(
+                'DELETE FROM requests_task WHERE task_id = ?',
+                [task.task_id]
+            );
 
-      for (const filename of files) {
-        if (
-          filename.startsWith(`${testUser.user_id}-`) ||
-          filename.startsWith(`${secondaryUser.user_id}-`)
-        ) {
-          await fs.unlink(
-            path.join(avatarDirectory, filename)
-          ).catch(() => {});
+            await DBPool.query(
+                'DELETE FROM user_tasks WHERE task_id = ?',
+                [task.task_id]
+            );
         }
-      }
+
+        // Eliminar las tareas.
+        await DBPool.query(
+            'DELETE FROM tasks WHERE created_by IN (?, ?)',
+            [testUser.user_id, secondaryUser.user_id]
+        );
+
+        // Finalmente, eliminar los usuarios.
+        await DBPool.query(
+            'DELETE FROM users WHERE user_id IN (?, ?)',
+            [testUser.user_id, secondaryUser.user_id]
+        );
 
     } finally {
-      await DBPool.end();
+        await DBPool.end();
     }
   });
 
@@ -162,29 +178,76 @@ describe('API - Profile', () => {
 
   describe('GET /perfil/buscar/:query', () => {
 
-    test('Encuentra otros usuarios por nombre de usuario', async () => {
-      const response = await agent
-        .get(`/perfil/buscar/${secondaryUser.username}`)
-        .query({ task_id: 0 });
+test('Encuentra otros usuarios por nombre de usuario', async () => {
+    const [result] = await DBPool.query(
+        `INSERT INTO tasks (name, description, created_by)
+         VALUES (?, ?, ?)`,
+        [
+            'Tarea de búsqueda',
+            'Tarea para probar la búsqueda de usuarios',
+            testUser.user_id
+        ]
+    );
 
-      expect(response.status).toBe(200);
+    const taskId = result.insertId;
 
-      expect(response.body.message).toBe('Perfiles encontrados (1)');
+    try {
+        const response = await agent
+            .get(`/perfil/buscar/${secondaryUser.username}`)
+            .query({ task_id: taskId });
 
-      expect(response.body.users).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            user_id: secondaryUser.user_id,
-            username: secondaryUser.username
-          })
-        ])
-      );
-    });
+        expect(response.status).toBe(200);
+
+        expect(response.body.message).toBe('Perfiles encontrados (1)');
+
+        expect(response.body.users).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({
+                    user_id: secondaryUser.user_id,
+                    username: secondaryUser.username
+                })
+            ])
+        );
+    } finally {
+        await DBPool.query(
+            'DELETE FROM tasks WHERE task_id = ?',
+            [taskId]
+        );
+    }
+});
+
+
 
     test('No devuelve al propio usuario en los resultados', async () => {
+      const [taskResult] = await DBPool.query(
+          `
+          INSERT INTO tasks (
+              name,
+              description,
+              status,
+              priority,
+              parent_task_id,
+              created_by,
+              visibility
+          )
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+          `,
+          [
+              'Tarea búsqueda API',
+              'Prueba de búsqueda',
+              'pending',
+              'medium',
+              null,
+              testUser.user_id,
+              'private'
+          ]
+      );
+
+      const taskId = taskResult.insertId;
+
       const response = await agent
-        .get(`/perfil/buscar/${testUser.username}`)
-        .query({ task_id: 0 });
+          .get(`/perfil/buscar/${testUser.username}`)
+          .query({ task_id: taskId });
 
       expect(response.status).toBe(200);
       expect(response.body.users).toHaveLength(0);
@@ -296,37 +359,37 @@ describe('API - Profile', () => {
   describe('POST /perfil/avatar', () => {
 
     test('Sube una imagen correctamente', async () => {
-      const imageBuffer = Buffer.from('test image content');
+  const imageBuffer = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p1sAAAAASUVORK5CYII=',
+    'base64'
+  );
 
-      const response = await agent
-        .post('/perfil/avatar')
-        .attach('avatar', imageBuffer, {
-          filename: 'avatar-test.png',
-          contentType: 'image/png'
-        });
+  const response = await agent
+    .post('/perfil/avatar')
+    .attach('avatar', imageBuffer, {
+      filename: 'avatar-test.png',
+      contentType: 'image/png'
+    });
 
-      expect(response.status).toBe(200);
+  expect(response.status).toBe(200);
+  expect(response.body.message).toBe('Avatar actualizado');
+  expect(response.body.user.avatar_url).toBeDefined();
 
-      expect(response.body.message).toBe('Avatar actualizado');
+  const filename = response.body.user.avatar_url;
 
-      expect(response.body.user.avatar_url).toBeDefined();
+  expect(filename).toContain(`${testUser.user_id}-`);
 
-      const filename = response.body.user.avatar_url;
+  const filePath = path.join(avatarDirectory, filename);
 
-      expect(filename).toContain(`${testUser.user_id}-`);
+  const fileStats = await fs.stat(filePath);
+  expect(fileStats.isFile()).toBe(true);
 
-      const filePath = path.join(avatarDirectory, filename);
+  const [rows] = await DBPool.query(
+    'SELECT avatar_url FROM users WHERE user_id = ?',
+    [testUser.user_id]
+  );
 
-      const fileStats = await fs.stat(filePath);
-
-      expect(fileStats.isFile()).toBe(true);
-
-      const [rows] = await DBPool.query(
-        'SELECT avatar_url FROM users WHERE user_id = ?',
-        [testUser.user_id]
-      );
-
-      expect(rows[0].avatar_url).toBe(filename);
+  expect(rows[0].avatar_url).toBe(filename);
     });
 
     test('Rechaza archivos que no son imágenes', async () => {
@@ -353,37 +416,63 @@ describe('API - Profile', () => {
   describe('DELETE /perfil/avatar', () => {
 
     test('Elimina el avatar del usuario', async () => {
-      const [rowsBefore] = await DBPool.query(
-        'SELECT avatar_url FROM users WHERE user_id = ?',
-        [testUser.user_id]
-      );
 
-      const filename = rowsBefore[0].avatar_url;
+      const filename = `${testUser.user_id}-delete-test.jpg`;
+      const filePath = path.join(avatarDirectory, filename);
 
-      expect(filename).toBeDefined();
+      try {
+          // Crear directorio y archivo de prueba.
+          await fs.mkdir(avatarDirectory, { recursive: true });
+          await fs.writeFile(filePath, 'Imagen de prueba');
 
-      const response = await agent
-        .delete('/perfil/avatar');
+          // Asignar el avatar al usuario en la base de datos.
+          await DBPool.query(
+              'UPDATE users SET avatar_url = ? WHERE user_id = ?',
+              [filename, testUser.user_id]
+          );
 
-      expect(response.status).toBe(200);
+          const [rowsBefore] = await DBPool.query(
+              'SELECT avatar_url FROM users WHERE user_id = ?',
+              [testUser.user_id]
+          );
 
-      expect(response.body).toEqual({
-        message: 'Perfil actualizado.',
-        user: {
-          avatar_url: null
-        }
-      });
+          expect(rowsBefore[0].avatar_url).toBe(filename);
 
-      const [rowsAfter] = await DBPool.query(
-        'SELECT avatar_url FROM users WHERE user_id = ?',
-        [testUser.user_id]
-      );
+          // Eliminar el avatar mediante la API.
+          const response = await agent
+              .delete('/perfil/avatar');
 
-      expect(rowsAfter[0].avatar_url).toBeNull();
+          expect(response.status).toBe(200);
 
-      await expect(
-        fs.access(path.join(avatarDirectory, filename))
-      ).rejects.toThrow();
+          expect(response.body).toEqual({
+              message: 'Perfil actualizado.',
+              user: {
+                  avatar_url: null
+              }
+          });
+
+          // Comprobar que la base de datos se ha actualizado.
+          const [rowsAfter] = await DBPool.query(
+              'SELECT avatar_url FROM users WHERE user_id = ?',
+              [testUser.user_id]
+          );
+
+          expect(rowsAfter[0].avatar_url).toBeNull();
+
+          // Comprobar que el archivo se ha eliminado.
+          await expect(
+              fs.access(filePath)
+          ).rejects.toThrow();
+
+      } finally {
+          // Limpieza por si alguna comprobación falla.
+          await DBPool.query(
+              'UPDATE users SET avatar_url = NULL WHERE user_id = ?',
+              [testUser.user_id]
+          );
+
+          await fs.unlink(filePath).catch(() => {});
+      }
     });
 
     test('Sin avatar devuelve 500', async () => {

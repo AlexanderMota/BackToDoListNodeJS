@@ -8,7 +8,7 @@ export default ({ AuthController }) => {
 
   router.post('/register', (req, res) => AuthController.createProfile(req, res));
   router.post('/login', (req, res) => AuthController.login(req, res));
-  router.post('/logout', authMiddleware, (req, res) => AuthController.logout(req, res));
+  router.post('/logout', (req, res) => AuthController.logout(req, res));
 
   return router;
 };

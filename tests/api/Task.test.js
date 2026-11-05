@@ -674,6 +674,11 @@ describe('API - Tasks', () => {
 
     test('Un colaborador puede consultar las subtareas', async () => {
 
+      await DBPool.query(
+          `UPDATE tasks SET visibility = 'public' WHERE task_id = ?`,
+          [subTaskId]
+      );
+
       const response = await secondaryAgent.get(
         `/tareas/derivadas/${parentTaskId}`
       );
@@ -688,6 +693,33 @@ describe('API - Tasks', () => {
         )
       ).toBe(true);
     });
+
+    test('Un colaborador de la tarea padre no puede ver una subtarea privada en la que no colabora', async () => {
+
+      await DBPool.query(
+          `UPDATE tasks SET visibility = 'private' WHERE task_id = ?`,
+          [subTaskId]
+      );
+
+      await DBPool.query(
+          `DELETE FROM user_tasks WHERE task_id = ? AND user_id = ?`,
+          [subTaskId, secondaryUser.user_id]
+      );
+
+      const response = await secondaryAgent.get(
+          `/tareas/derivadas/${parentTaskId}`
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('tasks');
+      expect(Array.isArray(response.body.tasks)).toBe(true);
+
+      expect(
+          response.body.tasks.some(
+              task => String(task.task_id) === String(subTaskId)
+          )
+      ).toBe(false);
+  });
 
     test('Un usuario sin permisos no puede consultar las subtareas', async () => {
 
@@ -714,7 +746,5 @@ describe('API - Tasks', () => {
         'Tarea no encontrada'
       );
     });
-
   });
-
 });

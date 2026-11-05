@@ -126,32 +126,43 @@ class UserRepository {
     );
 
     return result.affectedRows > 0;
-    //return this.findById(user_id);
   }
-  async updateProfile(user_id, profile){
+  async updateProfile(user_id, profile) {
 
-    const { name, lastname, username, phone} = profile;
+    const { name, lastname, username, phone } = profile;
+
     const [result] = await this.DBPool.query(
-      `
-        UPDATE users 
-        SET 
-          name = ?, 
-          lastname = ?, 
-          username = ?, 
-          phone = ?, 
-          updated_at = NOW() 
-        WHERE user_id = ?
-      `, [
-        name, 
-        lastname, 
-        username, 
-        phone, 
-        user_id
-      ]
+        `
+            UPDATE users
+            SET
+                name = ?,
+                lastname = ?,
+                username = ?,
+                phone = ?,
+                updated_at = NOW()
+            WHERE user_id = ?
+        `,
+        [
+            name,
+            lastname,
+            username,
+            phone,
+            user_id
+        ]
     );
 
-    return result.affectedRows > 0 ? profile : null;
+    if (result.affectedRows > 0) {
+        return profile;
+    }
+
+    const [rows] = await this.DBPool.query(
+        `SELECT user_id FROM users WHERE user_id = ?`,
+        [user_id]
+    );
+
+    return rows.length > 0 ? profile : null;
   }
+
   async updatePassword( user_id, currentPassword, newPassword ){
 
     const [result] = await this.DBPool.query(

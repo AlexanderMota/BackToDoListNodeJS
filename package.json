@@ -30,6 +30,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "express": "4.21.2",
+    "file-type": "^22.3.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.2.0",
     "mysql2": "3.12.0",

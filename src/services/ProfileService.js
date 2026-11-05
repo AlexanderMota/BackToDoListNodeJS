@@ -57,12 +57,7 @@ class ProfileService {
 
         } catch (err){
             // Si no existe el archivo, no pasa nada.
-            console.warn(
-              "No se pudo eliminar el fichero: ",
-              err.message
-            );
         }
-
     }
 
     if (!updatedUser) {
@@ -84,10 +79,10 @@ class ProfileService {
     const user = await this.userRepository.findById(user_id);
 
     if(user) {
-      if (user.password.startsWith('$2b$')) 
+     /* if (user.password.startsWith('$2b$')) */
         valid = await bcrypt.compare(currentPassword, user.password);
-      else
-        valid = currentPassword === user.password;
+      /*else
+        valid = currentPassword === user.password;*/
     }
     
     if (!valid) throw new Error('Contraseña incorrecta');
@@ -100,46 +95,41 @@ class ProfileService {
     const user = await this.getUserById(user_id);
 
     if (!user.avatar_url) {
-        throw new Error("El usuario no tiene avatar");
+        throw new Error('El usuario no tiene avatar');
     }
 
-    const filePath = path.join(
-        process.cwd(),
-        "uploads",
-        "avatars",
-        user.avatar_url
-    );
-
-    try {
-
-        await fs.unlink(filePath);
-
-    } catch (err) {
-
-        console.warn(
-            "No se pudo eliminar el fichero:",
-            err.message
-        );
-
-    }
+    const filename = user.avatar_url;
 
     const updatedUserRep = await this.userRepository.updateAvatar(
-        user.user_id,
+        user_id,
         null
     );
 
-    if (updatedUserRep) {
-
-        user.avatar_url = null;
-
-        return user;
-
-    } else {
-
+    if (!updatedUserRep) {
         throw new Error(
             'Hubo un problema inesperado al intentar eliminar el avatar'
         );
     }
+
+    const filePath = path.join(
+        process.cwd(),
+        'uploads',
+        'avatars',
+        filename
+    );
+
+    try {
+        await fs.unlink(filePath);
+    } catch (err) {
+        console.warn(
+            'No se pudo eliminar el fichero:',
+            err.message
+        );
+    }
+
+    user.avatar_url = null;
+
+    return user;
   }
   async deleteProfile(user_id){
     return await this.userRepository.delete(user_id);

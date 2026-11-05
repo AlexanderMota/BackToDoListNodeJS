@@ -91,7 +91,8 @@ describe('authMiddleware', () => {
             expect(mockVerify).toHaveBeenCalledTimes(1);
             expect(mockVerify).toHaveBeenCalledWith(
                 'token-valido',
-                process.env.JWT_SECRET
+                process.env.JWT_SECRET,
+                {"algorithms": ["HS256"]}
             );
 
             expect(mockRequest.user).toEqual(decodedUser);
@@ -115,7 +116,8 @@ describe('authMiddleware', () => {
             expect(mockVerify).toHaveBeenCalledTimes(1);
             expect(mockVerify).toHaveBeenCalledWith(
                 'token-invalido',
-                process.env.JWT_SECRET
+                process.env.JWT_SECRET,
+                {"algorithms": ["HS256"]}
             );
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);

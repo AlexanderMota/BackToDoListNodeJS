@@ -35,7 +35,7 @@ describe('ProfileController', () => {
         }; 
         mockResponse = { 
             //cookie: jest.fn(),
-            //clearCookie: jest.fn(),
+            clearCookie: jest.fn().mockReturnThis(),
             status: jest.fn().mockReturnThis(), 
             json: jest.fn().mockReturnThis() 
         };
@@ -82,7 +82,7 @@ describe('ProfileController', () => {
             expect(mockPerfilService.searchUsers).toHaveBeenCalledWith(
                 mockRequest.params.query, 
                 mockRequest.user.user_id, 
-                mockRequest.query.task_id); 
+                Number(mockRequest.query.task_id)); 
             expect(mockResponse.json).toHaveBeenCalledTimes(1); 
             expect(mockResponse.json).toHaveBeenCalledWith({
                 message: `Perfiles encontrados (${userData.length})`, 
@@ -100,7 +100,7 @@ describe('ProfileController', () => {
             expect(mockPerfilService.searchUsers).toHaveBeenCalledWith(
                 mockRequest.params.query, 
                 mockRequest.user.user_id, 
-                mockRequest.query.task_id); 
+                Number(mockRequest.query.task_id)); 
             expect(mockResponse.json).toHaveBeenCalledTimes(1); 
             expect(mockResponse.json).toHaveBeenCalledWith({
                 message: `Perfiles encontrados (0)`, 
@@ -203,15 +203,11 @@ describe('ProfileController', () => {
     describe('actualizarPerfil', () => {   
         test('Debe actualizar el perfil del usuario y devolver el perfil actualizado', async () => {
 
-            const newPerfil = { 
-                user_id: '123', 
-                name: 'JuanNew', 
-                lastname: 'MotaNew', 
-                username: 'Juananew', 
-                email: 'Juanan@test.com', 
-                phone: '600000002', 
-                avatar_url: 'Newavatar3.jpg', 
-                role: 'user' 
+            const newPerfil = {
+                name: 'JuanNew',
+                lastname: 'MotaNew',
+                username: 'Juananew',
+                phone: '600000002'
             };
             mockPerfilService.actualizarPerfil.mockResolvedValue(newPerfil); 
             
@@ -365,17 +361,17 @@ describe('ProfileController', () => {
             });
             
         });
-        test('Debe devolver 500 si se produce algún error eliminando el perfil', async () => {
+        test('Debe devolver 404 si el perfil no se encuentra', async () => {
             
             mockPerfilService.deleteProfile.mockResolvedValue(false);
             
             await controller.deleteProfile(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(500);
+            expect(mockResponse.status).toHaveBeenCalledWith(404);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'No se encontró el perfil que se intenta eliminar'
             });
         });
         test('Debe devolver 401 si el usuario no está autenticado', async () => {

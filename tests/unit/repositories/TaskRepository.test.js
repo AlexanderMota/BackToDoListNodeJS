@@ -136,17 +136,13 @@ describe('TaskRepository', () => {
     });
 
 
+    
     describe('findSubTasks', () => {
 
-        test('Debe devolver las subtareas de una tarea', async () => {
+        test('Debe devolver las subtareas cuando el usuario tiene acceso a la tarea padre', async () => {
 
             const parentTask = {
                 task_id: '1',
-                name: 'tarea mock nueva',
-                description: 'descripción de la tarea mock nueva',
-                status: null,
-                priority: null,
-                parent_task_id: null,
                 created_by: '123',
                 visibility: 'private'
             };
@@ -154,63 +150,73 @@ describe('TaskRepository', () => {
             const subtask = {
                 task_id: '2',
                 name: 'subtarea mock nueva',
-                description: 'descripción de la subtarea mock nueva',
-                status: null,
-                priority: null,
                 parent_task_id: '1',
                 created_by: '123',
                 visibility: 'private'
             };
 
             mockDBPool.query
-                .mockResolvedValueOnce([[parentTask]]) // Comprueba que existe la tarea padre
-                .mockResolvedValueOnce([[parentTask]]) // Comprueba los permisos
-                .mockResolvedValueOnce([[subtask]]);   // Obtiene las subtareas
+                .mockResolvedValueOnce([[parentTask]]) // findById: acceso a la tarea padre
+                .mockResolvedValueOnce([[subtask]]);    // Consulta de subtareas
 
             const result = await repository.findSubTasks('1', '123');
 
             expect(result).toEqual([subtask]);
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
 
-            expect(mockDBPool.query).toHaveBeenCalledTimes(3);
-
-            expect(mockDBPool.query).toHaveBeenLastCalledWith(
-                expect.stringContaining('WHERE parent_task_id = ?'),
-                ['1']
+            expect(mockDBPool.query).toHaveBeenNthCalledWith(
+                2,
+                expect.stringContaining('WHERE t.parent_task_id = ?'),
+                ['1', '123', '123']
             );
         });
-        
+
         test('Debe devolver un array vacío si la tarea no tiene subtareas', async () => {
 
             const parentTask = {
-                task_id: '2',
+                task_id: '1',
                 created_by: '123',
                 visibility: 'private'
             };
 
             mockDBPool.query
-                .mockResolvedValueOnce([[parentTask]]) // Comprueba existencia
-                .mockResolvedValueOnce([[parentTask]]) // Comprueba permisos
-                .mockResolvedValueOnce([[]]);          // No hay subtareas
+                .mockResolvedValueOnce([[parentTask]])
+                .mockResolvedValueOnce([[]]);
 
-            const result = await repository.findSubTasks('2', '123');
+            const result = await repository.findSubTasks('1', '123');
 
             expect(result).toEqual([]);
-            expect(mockDBPool.query).toHaveBeenCalledTimes(3);
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
         });
 
         test('Debe lanzar un error si la tarea padre no existe', async () => {
 
             mockDBPool.query
-                .mockResolvedValueOnce([[]]);
+                .mockResolvedValueOnce([[]]) // No encuentra una tarea accesible
+                .mockResolvedValueOnce([[]]); // Tampoco existe
 
             await expect(
                 repository.findSubTasks('999', '123')
             ).rejects.toThrow('Tarea no encontrada');
 
-            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
+        });
+
+        test('Debe lanzar un error si el usuario no tiene permiso sobre la tarea padre', async () => {
+
+            mockDBPool.query
+                .mockResolvedValueOnce([[]]) // No tiene acceso
+                .mockResolvedValueOnce([[{ task_id: '1' }]]); // La tarea sí existe
+
+            await expect(
+                repository.findSubTasks('1', '234')
+            ).rejects.toThrow('No tienes permiso para acceder a esta tarea');
+
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
         });
 
     });
+
 
 
     describe('findPublicTasks', () => {
@@ -375,6 +381,7 @@ describe('TaskRepository', () => {
     });
 
 
+    
     describe('findById', () => {
 
         test('Debe devolver la tarea cuando el usuario tiene permiso', async () => {
@@ -390,52 +397,37 @@ describe('TaskRepository', () => {
                 visibility: 'private'
             };
 
-            mockDBPool.query
-                .mockResolvedValueOnce([
-                    [{ task_id: '1' }]
-                ])
-
-                .mockResolvedValueOnce([[task]]);
+            mockDBPool.query.mockResolvedValueOnce([[task]]);
 
             const result = await repository.findById('1', '123');
 
             expect(result).toEqual(task);
+            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
 
-            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
-
-            expect(mockDBPool.query).toHaveBeenNthCalledWith(
-                1, expect.stringContaining('SELECT *'), ['1']
+            expect(mockDBPool.query).toHaveBeenCalledWith(
+                expect.stringContaining('WHERE t.task_id = ?'),
+                ['1', '123', '123', '123']
             );
-
-            expect(mockDBPool.query).toHaveBeenNthCalledWith(
-                2, expect.stringContaining('WHERE t.task_id = ?'),
-                ['1', '123', '123', '123', '1']
-            );
-
         });
+
         test('Debe lanzar error si la tarea no existe', async () => {
 
-            mockDBPool.query.mockResolvedValueOnce([
-                []
-            ]);
+            mockDBPool.query
+                .mockResolvedValueOnce([[]]) // No encuentra tarea accesible
+                .mockResolvedValueOnce([[]]); // Comprueba que tampoco existe
 
             await expect(
                 repository.findById('3', '123')
             ).rejects.toThrow('Tarea no encontrada');
 
-            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
-
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
         });
+
         test('Debe lanzar error si el usuario no tiene permiso', async () => {
 
             mockDBPool.query
-                .mockResolvedValueOnce([
-                    [{ task_id: '1' }]
-                ])
-
-                .mockResolvedValueOnce([
-                    []
-                ]);
+                .mockResolvedValueOnce([[]]) // No encuentra tarea accesible
+                .mockResolvedValueOnce([[{ task_id: '1' }]]); // La tarea existe
 
             await expect(
                 repository.findById('1', '234')
@@ -444,9 +436,10 @@ describe('TaskRepository', () => {
             );
 
             expect(mockDBPool.query).toHaveBeenCalledTimes(2);
-
         });
+
     });
+
 
 
     describe('findPriorities', () => {
@@ -515,7 +508,6 @@ describe('TaskRepository', () => {
                 description: 'descripción de la tarea mock nueva',
                 status: null,
                 priority: 'alta',
-                parent_task_id: null,
                 created_by: '123',
                 visibility: 'public'
             };
@@ -541,7 +533,6 @@ describe('TaskRepository', () => {
                     task.description, 
                     task.status, 
                     task.priority, 
-                    task.parent_task_id, 
                     task.visibility, 
                     task.task_id, 
                     user_id 
@@ -557,7 +548,6 @@ describe('TaskRepository', () => {
                 description: 'descripción de la tarea mock nueva',
                 status: null,
                 priority: 'alta',
-                parent_task_id: null,
                 created_by: '123',
                 visibility: 'public'
             };
@@ -583,13 +573,36 @@ describe('TaskRepository', () => {
                     task.description, 
                     task.status, 
                     task.priority, 
-                    task.parent_task_id, 
                     task.visibility, 
                     task.task_id, 
                     user_id 
                 ]
             );
         });
+        
+        test('No debe permitir modificar parent_task_id', async () => {
+
+            const task = {
+                name: 'Tarea actualizada',
+                description: 'Descripción actualizada',
+                status: 'pending',
+                priority: 'high',
+                visibility: 'public',
+                parent_task_id: 999
+            };
+
+            mockDBPool.query.mockResolvedValue([
+                { affectedRows: 1 }
+            ]);
+
+            await repository.update('1', task, '123');
+
+            const [sql, params] = mockDBPool.query.mock.calls[0];
+
+            expect(sql).not.toMatch(/parent_task_id\s*=/i);
+            expect(params).not.toContain(999);
+        });
+
     });
 
     

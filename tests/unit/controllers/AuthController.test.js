@@ -136,7 +136,7 @@ describe('AuthController', () => {
         }); 
         test('Debe devolver 500 cuando authService.getMe lanza un error', async () => { 
 
-            const error = new Error('Usuario no encontrado'); 
+            const error = new Error('Error interno del servidor'); 
             
             mockAuthService.getMe.mockRejectedValue(error); 
             
@@ -256,9 +256,7 @@ describe('AuthController', () => {
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 message: 'Logout exitoso.',
-                user: {
-                    email: user.email
-                }
+                user: {}
             });
         });
 

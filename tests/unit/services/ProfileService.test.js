@@ -277,62 +277,95 @@ describe('ProfileService', () => {
         }); 
     }); 
     describe('actualizarPassword', () => { 
-        test('Debe mandar los datos para actualizar la contraseña y confirmar si se completó la operación', async() => { 
+        
 
+        test('Debe mandar los datos para actualizar la contraseña y confirmar si se completó la operación', async () => {
+            const currentPassword = 'contraseña123';
             const newPassword = 'nueva_contraseña123';
-            const user = { 
-                user_id:'123',
-                name: 'Alexander', 
-                lastname: 'Mota', 
-                username: 'alex', 
-                email: 'alex@test.com', 
-                password: 'contraseña123' 
-            }; 
-            const { password, ...userSafe } = user;
 
-            mockBcryptHash.mockResolvedValue(newPassword); 
-            mockUserRepository.findById.mockResolvedValue(user); 
-            mockUserRepository.updatePassword.mockResolvedValue(true); 
+            const user = {
+                user_id: '123',
+                name: 'Alexander',
+                lastname: 'Mota',
+                username: 'alex',
+                email: 'alex@test.com',
+                password: 'contraseña123'
+            };
 
-            const result = await service.actualizarPassword( user.user_id, user.password, newPassword );
-            
-            expect(result).toEqual(true);
-            expect(mockUserRepository.findById).toHaveBeenCalledTimes(1); 
-            expect(mockUserRepository.findById).toHaveBeenCalledWith( user.user_id); 
-            expect(mockUserRepository.updatePassword).toHaveBeenCalledTimes(1); 
-            expect(mockUserRepository.updatePassword).toHaveBeenCalledWith( 
-                user.user_id, user.password, newPassword
-            ); 
+            const hashedNewPassword = 'password_hasheada';
+
+            mockBcryptCompare.mockResolvedValue(true);
+            mockBcryptHash.mockResolvedValue(hashedNewPassword);
+            mockUserRepository.findById.mockResolvedValue(user);
+            mockUserRepository.updatePassword.mockResolvedValue(true);
+
+            const result = await service.actualizarPassword(
+                user.user_id,
+                currentPassword,
+                newPassword
+            );
+
+            expect(result).toBe(true);
+
+            expect(mockUserRepository.findById).toHaveBeenCalledWith(user.user_id);
+
+            expect(mockBcryptCompare).toHaveBeenCalledWith(
+                currentPassword,
+                user.password
+            );
+
+            expect(mockBcryptHash).toHaveBeenCalledWith(newPassword, 10);
+
+            expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+                user.user_id,
+                user.password,
+                hashedNewPassword
+            );
         });
         
-        test('Debe mandar los datos para actualizar la contraseña y confirmar si no se completó la operación', async() => { 
-
+        test('Debe mandar los datos para actualizar la contraseña y confirmar si no se completó la operación', async () => {
+            const currentPassword = 'contraseña123';
             const newPassword = 'nueva_contraseña123';
-            
-            const user = { 
-                user_id:'123',
-                name: 'Alexander', 
-                lastname: 'Mota', 
-                username: 'alex', 
-                email: 'alex@test.com', 
-                password: 'contraseña123' 
-            }; 
-            const { password, ...userSafe } = user;
 
-            mockBcryptHash.mockResolvedValue(newPassword); 
-            mockUserRepository.findById.mockResolvedValue(user); 
-            mockUserRepository.updatePassword.mockResolvedValue(false); 
+            const user = {
+                user_id: '123',
+                name: 'Alexander',
+                lastname: 'Mota',
+                username: 'alex',
+                email: 'alex@test.com',
+                password: 'contraseña123'
+            };
 
-            const result = await service.actualizarPassword( user.user_id, user.password, newPassword );
-            
-            expect(result).toEqual(false);
-            expect(mockUserRepository.findById).toHaveBeenCalledTimes(1); 
-            expect(mockUserRepository.findById).toHaveBeenCalledWith( user.user_id); 
-            expect(mockUserRepository.updatePassword).toHaveBeenCalledTimes(1); 
-            expect(mockUserRepository.updatePassword).toHaveBeenCalledWith( 
-                user.user_id, user.password, newPassword
+            const hashedNewPassword = 'password_hasheada';
+
+            mockBcryptCompare.mockResolvedValue(true);
+            mockBcryptHash.mockResolvedValue(hashedNewPassword);
+            mockUserRepository.findById.mockResolvedValue(user);
+            mockUserRepository.updatePassword.mockResolvedValue(false);
+
+            const result = await service.actualizarPassword(
+                user.user_id,
+                currentPassword,
+                newPassword
             );
-        }); 
+
+            expect(result).toBe(false);
+
+            expect(mockUserRepository.findById).toHaveBeenCalledWith(user.user_id);
+
+            expect(mockBcryptCompare).toHaveBeenCalledWith(
+                currentPassword,
+                user.password
+            );
+
+            expect(mockBcryptHash).toHaveBeenCalledWith(newPassword, 10);
+
+            expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+                user.user_id,
+                user.password,
+                hashedNewPassword
+            );
+        });
         test('Debe actualizar la contraseña cuando la contraseña actual hasheada es correcta', async () => { 
             const currentPassword = 'contraseña123'; 
             const newPassword = 'nueva_contraseña123'; 

@@ -261,7 +261,7 @@ describe('UserRepository', () => {
                 ]
             );
         });
-        test('Debe devolver null cuando no se actualiza ningún usuario', async () => {
+        test('Debe devolver null cuando no existe el usuario', async () => {
 
             const profile = {
                 name: 'Alexander',
@@ -270,14 +270,37 @@ describe('UserRepository', () => {
                 phone: '600123456'
             };
 
-            mockDBPool.query.mockResolvedValue([
-                { affectedRows: 0 }
-            ]);
+            mockDBPool.query
+                .mockResolvedValueOnce([
+                    { affectedRows: 0 }
+                ])
+                .mockResolvedValueOnce([
+                    []
+                ]);
 
             const result = await repository.updateProfile('999', profile);
 
             expect(result).toBeNull();
-            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
+
+            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
+
+            expect(mockDBPool.query).toHaveBeenNthCalledWith(
+                1,
+                expect.stringContaining('UPDATE users'),
+                [
+                    'Alexander',
+                    'Mota',
+                    'alex',
+                    '600123456',
+                    '999'
+                ]
+            );
+
+            expect(mockDBPool.query).toHaveBeenNthCalledWith(
+                2,
+                expect.stringContaining('SELECT user_id FROM users'),
+                ['999']
+            );
         });
     });
 

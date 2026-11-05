@@ -7,6 +7,11 @@ class AuthController {
 
   createProfile = async (req, res) => {
     try {
+      if (!req.body?.user || typeof req.body.user !== 'object') {
+        return res.status(400).json({
+          error: 'Los datos del usuario son requeridos'
+        });
+      }
       const { user } = req.body;
       const newUser = await this.perfilService.createProfile(user);
 
@@ -43,6 +48,11 @@ class AuthController {
     } catch (error) {
 
       //console.error('Error en createTarea:', error);
+      if (error.message === "Usuario no encontrado") {
+        return res.status(404).json({
+          error: 'Usuario no encontrado'
+        });
+      }
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -73,37 +83,36 @@ class AuthController {
 
     } catch (error) {
 
-      //console.error('Error en createTarea:', error);
       if (error.message === "Contraseña incorrecta") {
-        return res.status(400).json({
-          error: 'Contraseña incorrecta'
+        return res.status(401).json({
+          error: 'Credenciales incorrectas'
         });
       }
 
       return res.status(500).json({
         error: 'Error interno del servidor'
       });
-
     }
   }
 
   logout = async (req, res) => {
     try {
-      res.clearCookie('access_token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-      });
-      res.json({message: 'Logout exitoso.', user: {email: req.user.email}});
+        res.clearCookie('access_token', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/'
+        });
+
+        return res.json({
+            message: 'Logout exitoso.',
+            user: {}
+        });
+
     } catch (error) {
-
-      //console.error('Error en createTarea:', error);
-
-      return res.status(500).json({
-        error: 'Error interno del servidor'
-      });
-
+        return res.status(500).json({
+            error: 'Error interno del servidor'
+        });
     }
   }
 }

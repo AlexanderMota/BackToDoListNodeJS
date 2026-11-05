@@ -3,12 +3,12 @@ import { DBPool } from '../../../src/config/dbconnection.js';
 import { randomUUID } from 'node:crypto';
 
 
+
 describe('TaskRepository', () => {
+    const taskRepository = new TaskRepository({DBPool});
 
-    const taskRepository = new TaskRepository({
-        DBPool
-    });
-
+    let createdUsers = [];
+    let createdTasks = [];
 
     const createTestUser = () => {
         
@@ -63,6 +63,86 @@ describe('TaskRepository', () => {
             5
         ]);
     };
+
+
+    const createUser = async () => {
+        const user = createTestUser();
+
+        await insertTestUser(user);
+
+        createdUsers.push(user.user_id);
+
+        return user;
+    };
+
+    const createTask = async (created_by, overrides = {}) => {
+        const task = await taskRepository.create({
+            name: 'Tarea de prueba',
+            description: 'Descripción de prueba',
+            status: 'pending',
+            priority: 'medium',
+            parent_task_id: null,
+            created_by,
+            visibility: 'private',
+            ...overrides
+        });
+
+        createdTasks.push(task.task_id);
+
+        return task;
+    };
+
+    beforeEach(() => {
+        createdUsers = [];
+        createdTasks = [];
+    });
+
+    afterEach(async () => {
+        const taskIds = [...createdTasks];
+        const userIds = [...createdUsers];
+
+        const placeholders = (ids) => ids.map(() => '?').join(',');
+
+        // Limpiar solicitudes y colaboraciones.
+        for (const table of ['requests_task', 'user_tasks']) {
+            const conditions = [];
+            const params = [];
+
+            if (taskIds.length) {
+                conditions.push(`task_id IN (${placeholders(taskIds)})`);
+                params.push(...taskIds);
+            }
+
+            if (userIds.length) {
+                conditions.push(`user_id IN (${placeholders(userIds)})`);
+                params.push(...userIds);
+            }
+
+            if (conditions.length) {
+                await DBPool.query(
+                    `DELETE FROM ${table} WHERE ${conditions.join(' OR ')}`,
+                    params
+                );
+            }
+        }
+
+        // Eliminar primero las subtareas y después las principales.
+        for (const taskId of [...taskIds].reverse()) {
+            await DBPool.query(
+                'DELETE FROM tasks WHERE task_id = ?',
+                [taskId]
+            );
+        }
+
+        for (const userId of userIds) {
+            await DBPool.query(
+                'DELETE FROM users WHERE user_id = ?',
+                [userId]
+            );
+        }
+    });
+
+
 
 
     describe('create', () => {
@@ -220,8 +300,109 @@ describe('TaskRepository', () => {
             );
         });
 
-    });
 
+
+        test('El propietario de la tarea principal debe poder ver todas sus subtareas', async () => {
+            const owner = await createUser();
+
+            const parentTask = await createTask(owner.user_id);
+
+            const privateSubTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'private'
+            });
+
+            const publicSubTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'public'
+            });
+
+            const result = await taskRepository.findSubTasks(
+                parentTask.task_id,
+                owner.user_id
+            );
+
+            expect(result).toHaveLength(2);
+
+            expect(result.map(task => task.task_id)).toEqual(
+                expect.arrayContaining([
+                    privateSubTask.task_id,
+                    publicSubTask.task_id
+                ])
+            );
+        });
+
+
+        test('Un colaborador solo debe ver las subtareas públicas o aquellas en las que colabora', async () => {
+            const owner = await createUser();
+            const collaborator = await createUser();
+
+            const parentTask = await createTask(owner.user_id);
+
+            const privateSubTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'private'
+            });
+
+            const publicSubTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'public'
+            });
+
+            const collaboratingSubTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'private'
+            });
+
+            // El usuario colabora en la tarea principal.
+            await DBPool.query(
+                'INSERT INTO user_tasks (user_id, task_id) VALUES (?, ?)',
+                [collaborator.user_id, parentTask.task_id]
+            );
+
+            // También colabora en una de las subtareas privadas.
+            await DBPool.query(
+                'INSERT INTO user_tasks (user_id, task_id) VALUES (?, ?)',
+                [collaborator.user_id, collaboratingSubTask.task_id]
+            );
+
+            const result = await taskRepository.findSubTasks(
+                parentTask.task_id,
+                collaborator.user_id
+            );
+
+            expect(result).toHaveLength(2);
+
+            const returnedIds = result.map(task => task.task_id);
+
+            expect(returnedIds).toContain(publicSubTask.task_id);
+            expect(returnedIds).toContain(collaboratingSubTask.task_id);
+            expect(returnedIds).not.toContain(privateSubTask.task_id);
+        });
+
+
+        test('Un usuario sin acceso a la tarea principal no debe poder consultar sus subtareas', async () => {
+            const owner = await createUser();
+            const unauthorizedUser = await createUser();
+
+            const parentTask = await createTask(owner.user_id);
+
+            // Aunque la subtarea sea pública, no se puede acceder
+            // a través de una tarea principal privada sin autorización.
+            await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id,
+                visibility: 'public'
+            });
+
+            await expect(
+                taskRepository.findSubTasks(
+                    parentTask.task_id,
+                    unauthorizedUser.user_id
+                )
+            ).rejects.toThrow('No tienes permiso para acceder a esta tarea');
+        });
+
+    });
 
     describe('findPublicTasks', () => {
 
@@ -326,6 +507,63 @@ describe('TaskRepository', () => {
                 'DELETE FROM users WHERE user_id = ?',
                 [user.user_id]
             );
+        });
+
+
+
+        test('Debe excluir tareas con solicitudes pendientes o aceptadas, pero mostrar las rechazadas y sin solicitud', async () => {
+            const owner = await createUser();
+            const requester = await createUser();
+
+            const pendingTask = await createTask(owner.user_id, {
+                visibility: 'public'
+            });
+
+            const acceptedTask = await createTask(owner.user_id, {
+                visibility: 'public'
+            });
+
+            const declinedTask = await createTask(owner.user_id, {
+                visibility: 'public'
+            });
+
+            const cancelledTask = await createTask(owner.user_id, {
+                visibility: 'public'
+            });
+
+            const noRequestTask = await createTask(owner.user_id, {
+                visibility: 'public'
+            });
+
+            // Crear solicitudes.
+            await DBPool.query(
+                `INSERT INTO requests_task (task_id, user_id, status)
+                VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?), (?, ?, ?)`,
+                [
+                    pendingTask.task_id, requester.user_id, 'pending',
+                    acceptedTask.task_id, requester.user_id, 'accepted',
+                    declinedTask.task_id, requester.user_id, 'declined',
+                    cancelledTask.task_id, requester.user_id, 'pending'
+                ]
+            );
+
+            await DBPool.query(
+                'DELETE FROM requests_task WHERE task_id = ? AND user_id = ?',
+                [cancelledTask.task_id, requester.user_id]
+            );
+
+            const result = await taskRepository.findPublicTasks(
+                requester.user_id
+            );
+
+            const returnedIds = result.map(task => task.task_id);
+
+            expect(returnedIds).not.toContain(pendingTask.task_id);
+            expect(returnedIds).not.toContain(acceptedTask.task_id);
+
+            expect(returnedIds).toContain(declinedTask.task_id);
+            expect(returnedIds).toContain(cancelledTask.task_id);
+            expect(returnedIds).toContain(noRequestTask.task_id);
         });
 
     });
@@ -851,8 +1089,90 @@ describe('TaskRepository', () => {
             );
         });
 
-    });
 
+
+        test('Debe actualizar los campos permitidos sin modificar parent_task_id', async () => {
+            const owner = await createUser();
+
+            const parentTask = await createTask(owner.user_id);
+            const anotherParentTask = await createTask(owner.user_id);
+
+            const subTask = await createTask(owner.user_id, {
+                parent_task_id: parentTask.task_id
+            });
+
+            const updatedTask = {
+                name: 'Nombre actualizado',
+                description: 'Descripción actualizada',
+                status: 'inprogress',
+                priority: 'high',
+                visibility: 'public',
+
+                // Intentamos cambiar la jerarquía.
+                parent_task_id: anotherParentTask.task_id
+            };
+
+            const result = await taskRepository.update(
+                subTask.task_id,
+                updatedTask,
+                owner.user_id
+            );
+
+            expect(result).not.toBeNull();
+
+            const [rows] = await DBPool.query(
+                'SELECT * FROM tasks WHERE task_id = ?',
+                [subTask.task_id]
+            );
+
+            expect(rows).toHaveLength(1);
+
+            expect(rows[0].name).toBe('Nombre actualizado');
+            expect(rows[0].description).toBe('Descripción actualizada');
+            expect(rows[0].status).toBe('inprogress');
+            expect(rows[0].priority).toBe('high');
+            expect(rows[0].visibility).toBe('public');
+
+            // La jerarquía original debe permanecer intacta.
+            expect(rows[0].parent_task_id).toBe(parentTask.task_id);
+        });
+
+
+        test('Un usuario que no sea propietario no debe poder actualizar la tarea', async () => {
+            const owner = await createUser();
+            const unauthorizedUser = await createUser();
+
+            const task = await createTask(owner.user_id);
+
+            const updatedTask = {
+                name: 'Intento de modificación',
+                description: 'No debería actualizarse',
+                status: 'inprogress',
+                priority: 'critical',
+                visibility: 'public'
+            };
+
+            const result = await taskRepository.update(
+                task.task_id,
+                updatedTask,
+                unauthorizedUser.user_id
+            );
+
+            expect(result).toBeNull();
+
+            const [rows] = await DBPool.query(
+                'SELECT * FROM tasks WHERE task_id = ?',
+                [task.task_id]
+            );
+
+            expect(rows[0].name).toBe('Tarea de prueba');
+            expect(rows[0].description).toBe('Descripción de prueba');
+            expect(rows[0].status).toBe('pending');
+            expect(rows[0].priority).toBe('medium');
+            expect(rows[0].visibility).toBe('private');
+        });
+
+    });
 
     describe('delete', () => {
 
@@ -930,5 +1250,4 @@ describe('TaskRepository', () => {
     afterAll(async () => {
         await DBPool.end();
     });
-
 });

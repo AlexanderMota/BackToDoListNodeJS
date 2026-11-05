@@ -124,7 +124,7 @@ describe('API - Autenticación', () => {
       expect(response.body).toHaveProperty('error');
     });
 
-    test('Con contraseña incorrecta devuelve 404', async () => {
+    test('Con contraseña incorrecta devuelve 401', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -134,9 +134,9 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(401);
       expect(response.body).toEqual({
-        error: 'Contraseña incorrecta'
+        error: 'Credenciales incorrectas'
       });
     });
 
@@ -176,15 +176,28 @@ describe('API - Autenticación', () => {
 
   describe('POST /auth/logout', () => {
 
-    test('Sin cookie devuelve 401', async () => {
+    test('Sin cookie permite cerrar sesión y devuelve 200', async () => {
       const response = await request(app)
-        .post('/auth/logout');
+          .post('/auth/logout');
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(200);
+
       expect(response.body).toEqual({
-        error: 'No autenticado'
+          message: 'Logout exitoso.',
+          user: {}
       });
-    });
+
+      const cookies = response.headers['set-cookie'];
+
+      expect(cookies).toBeDefined();
+
+      const accessTokenCookie = cookies.find(cookie =>
+          cookie.startsWith('access_token=')
+      );
+
+      expect(accessTokenCookie).toBeDefined();
+      expect(accessTokenCookie).toMatch(/access_token=;/);
+  });
 
   });
 

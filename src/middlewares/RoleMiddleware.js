@@ -1,4 +1,4 @@
-export const roleMiddleware = (roles) => {
+/*export const roleMiddleware = (roles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({ error: 'No autenticado' });
@@ -10,4 +10,4 @@ export const roleMiddleware = (roles) => {
 
     next();
   };
-};
+};*/
