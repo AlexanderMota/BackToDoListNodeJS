@@ -11,8 +11,8 @@ class TasksService {
   async getParentTasksByUserID(user_id) {
     return await this.taskRepository.findParentTasksByUserID(user_id);
   }
-  async getSubTasks(parent_task_id) {
-    return await this.taskRepository.findSubTasks(parent_task_id);
+  async getSubTasks(parent_task_id, user_id) {
+    return await this.taskRepository.findSubTasks(parent_task_id, user_id);
   }
   async getTasksByCollaborating(user_id){
     return await this.taskRepository.findTasksByCollaborating(user_id);

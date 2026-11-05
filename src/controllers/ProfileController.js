@@ -7,7 +7,7 @@ class ProfileController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const { query } = req.params;
       const { task_id } = req.query;
@@ -16,7 +16,13 @@ class ProfileController {
 
       res.json({message: `Perfiles encontrados (${usersResult.length})`, users: usersResult});
     }catch (error) {
-      res.status(401).json( {error: error.message});
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
   subirFotoDePerfil = async (req, res) => {
@@ -24,7 +30,7 @@ class ProfileController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const avatar_url = req.file.filename;
 
@@ -40,7 +46,13 @@ class ProfileController {
       });
       
     } catch (error) {
-      res.status(401).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
 
@@ -49,14 +61,20 @@ class ProfileController {
     try {
       const user = req.user;
 
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const profile = await this.profileService.getUserById(user.user_id);
 
       res.json({message: 'Perfil encontrado', user: profile});
 
     } catch (error) {
-      res.status(401).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
   
@@ -65,7 +83,7 @@ class ProfileController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const { perfil } = req.body;
 
@@ -74,7 +92,11 @@ class ProfileController {
       res.json({message: 'Perfil actualizado', user: profileAct});
 
     } catch (error){
-      res.status(401).json({ error: error.message });
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
     }
   }
   actualizarPassword = async (req, res) => {
@@ -82,45 +104,78 @@ class ProfileController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const { password } = req.body;
 
-      if(password.newPassword == password.currentPassword) throw new Error("La nueva contraseña es igual que la anterior");
+      if(password.newPassword == password.currentPassword) 
+        return res.status(400).json({
+          error: 'La nueva contraseña es igual que la anterior'
+        });
 
       const profileAct = await this.profileService.actualizarPassword(user.user_id,  password.currentPassword, password.newPassword);
 
-      if(!profileAct) throw new Error("Tuvimos un problema al intentar actualizar la contraseña. Verifica que la contraseña actual sea correcta");
+      if(!profileAct)
+        return res.status(400).json({
+          error: 'Tuvimos un problema al intentar actualizar la contraseña. Verifica que la contraseña actual sea correcta'
+        });
 
       res.json({message: 'Perfil actualizado.', user: user});
 
     } catch (error){
-      res.status(401).json({ error: error.message });
+      //console.error('Error en createTarea:', error);
+      if(error.message === "Contraseña incorrecta") { 
+        return res.status(400).json({
+          error: 'Contraseña incorrecta'
+        });
+      }
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
     }
   }
-    
   deleteFotoDePerfil = async (req, res) => {
-
     try {
-      
-      if (!req.user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!req.user) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
 
       const profileAct = await this.profileService.deleteAvatar(req.user.user_id);
 
-      if(!profileAct) throw new Error("Tuvimos un problema al intentar eliminar la foto de perfil");
+      if (!profileAct) {
+        return res.status(500).json({
+          error: 'Error interno del servidor'
+        });
+      }
 
-      res.json({message: 'Perfil actualizado.', user: {avatar_url: null}});
+      return res.status(200).json({
+        message: 'Perfil actualizado.',
+        user: { avatar_url: null }
+      });
 
-    } catch (error){
-      res.status(401).json({ error: error.message });
+    } catch (error) {
+      if (error.message === 'El usuario no tiene avatar') {
+        return res.status(404).json({
+          error: 'El usuario no tiene avatar'
+        });
+      }
+
+      console.error('Error en deleteFotoDePerfil:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
     }
-  }
+  };
  
   deleteProfile = async (req, res) => {
 
     try {
 
-      if (!req.user) return res.status(400).json({ error: 'Usuario no autenticado' });
+      if (!req.user) return res.status(401).json({ error: 'Usuario no autenticado' });
 
       const profileAct = await this.profileService.deleteProfile(req.user.user_id);
 
@@ -128,7 +183,11 @@ class ProfileController {
 
       res.json({message: 'Perfil eliminado.', user: {}});
     } catch (error){
-      res.status(401).json({ error: error.message });
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
     }
   }
 }

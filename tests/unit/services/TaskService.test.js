@@ -153,9 +153,9 @@ describe('TaskService', () => {
 
             mockTareasRepository.findSubTasks.mockResolvedValue(subtasks);
 
-            const result = await service.getSubTasks(1);
+            const result = await service.getSubTasks(1, 'user-123');
 
-            expect(mockTareasRepository.findSubTasks).toHaveBeenCalledWith(1);
+            expect(mockTareasRepository.findSubTasks).toHaveBeenCalledWith(1, 'user-123');
             expect(mockTareasRepository.findSubTasks).toHaveBeenCalledTimes(1);
             expect(result).toEqual(subtasks);
         });

@@ -140,53 +140,76 @@ describe('TaskRepository', () => {
 
         test('Debe devolver las subtareas de una tarea', async () => {
 
-            const tasks = [
-                {
-                    task_id: '1',
-                    name: 'tarea mock nueva',
-                    description: 'descripción de la tarea mock nueva',
-                    status: null,
-                    priority: null,
-                    parent_task_id: null,
-                    created_by: '123',
-                    visibility: 'private'
-                },
-                {
-                    task_id: '2',
-                    name: 'subtarea mock nueva',
-                    description: 'descripción de la subtarea mock nueva',
-                    status: null,
-                    priority: null,
-                    parent_task_id: '1',
-                    created_by: '123',
-                    visibility: 'private'
-                }
-            ];
+            const parentTask = {
+                task_id: '1',
+                name: 'tarea mock nueva',
+                description: 'descripción de la tarea mock nueva',
+                status: null,
+                priority: null,
+                parent_task_id: null,
+                created_by: '123',
+                visibility: 'private'
+            };
 
-            mockDBPool.query.mockResolvedValue([tasks[1]]);
+            const subtask = {
+                task_id: '2',
+                name: 'subtarea mock nueva',
+                description: 'descripción de la subtarea mock nueva',
+                status: null,
+                priority: null,
+                parent_task_id: '1',
+                created_by: '123',
+                visibility: 'private'
+            };
 
-            const result = await repository.findSubTasks('1');
+            mockDBPool.query
+                .mockResolvedValueOnce([[parentTask]]) // Comprueba que existe la tarea padre
+                .mockResolvedValueOnce([[parentTask]]) // Comprueba los permisos
+                .mockResolvedValueOnce([[subtask]]);   // Obtiene las subtareas
 
-            expect(result).toEqual(tasks[1]);
+            const result = await repository.findSubTasks('1', '123');
 
-            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
+            expect(result).toEqual([subtask]);
 
-            expect(mockDBPool.query).toHaveBeenCalledWith(
+            expect(mockDBPool.query).toHaveBeenCalledTimes(3);
+
+            expect(mockDBPool.query).toHaveBeenLastCalledWith(
                 expect.stringContaining('WHERE parent_task_id = ?'),
                 ['1']
             );
         });
-        test('Debe devolver null si la tarea no existe o no tiene subtareas', async () => {
+        
+        test('Debe devolver un array vacío si la tarea no tiene subtareas', async () => {
 
-            mockDBPool.query.mockResolvedValue([
-                []
-            ]);
+            const parentTask = {
+                task_id: '2',
+                created_by: '123',
+                visibility: 'private'
+            };
 
-            const result = await repository.findSubTasks('2');
+            mockDBPool.query
+                .mockResolvedValueOnce([[parentTask]]) // Comprueba existencia
+                .mockResolvedValueOnce([[parentTask]]) // Comprueba permisos
+                .mockResolvedValueOnce([[]]);          // No hay subtareas
+
+            const result = await repository.findSubTasks('2', '123');
 
             expect(result).toEqual([]);
-
+            expect(mockDBPool.query).toHaveBeenCalledTimes(3);
         });
+
+        test('Debe lanzar un error si la tarea padre no existe', async () => {
+
+            mockDBPool.query
+                .mockResolvedValueOnce([[]]);
+
+            await expect(
+                repository.findSubTasks('999', '123')
+            ).rejects.toThrow('Tarea no encontrada');
+
+            expect(mockDBPool.query).toHaveBeenCalledTimes(1);
+        });
+
     });
 
 

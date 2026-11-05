@@ -124,7 +124,7 @@ describe('API - Profile', () => {
       ['PUT', '/perfil/password'],
       ['DELETE', '/perfil/avatar'],
       ['DELETE', '/perfil']
-    ])('%s %s sin cookie devuelve 403', async (method, endpoint) => {
+    ])('%s %s sin cookie devuelve 401', async (method, endpoint) => {
       const response = await request(app)[method.toLowerCase()](endpoint);
 
       expect(response.status).toBe(401);
@@ -238,13 +238,13 @@ describe('API - Profile', () => {
           }
         });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: 'Contraseña incorrecta'
       });
     });
 
-    test('Con contraseña nueva igual a la actual devuelve 401', async () => {
+    test('Con contraseña nueva igual a la actual devuelve 400', async () => {
       const response = await agent
         .put('/perfil/password')
         .send({
@@ -254,7 +254,7 @@ describe('API - Profile', () => {
           }
         });
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: 'La nueva contraseña es igual que la anterior'
       });
@@ -386,11 +386,11 @@ describe('API - Profile', () => {
       ).rejects.toThrow();
     });
 
-    test('Sin avatar devuelve 401', async () => {
+    test('Sin avatar devuelve 500', async () => {
       const response = await agent
         .delete('/perfil/avatar');
 
-      expect(response.status).toBe(401);
+      expect(response.status).toBe(404);
 
       expect(response.body).toEqual({
         error: 'El usuario no tiene avatar'

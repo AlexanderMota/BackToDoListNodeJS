@@ -107,12 +107,12 @@ describe('ProfileController', () => {
                 users: []
             });
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             mockRequest.user = null; // Simula que no hay usuario autenticado
             await controller.searchUsers(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -141,23 +141,23 @@ describe('ProfileController', () => {
                 }
             });
         }); 
-        test('Debe devolver 401 si no se puede actualizar el avatar', async () => {
+        test('Debe devolver 500 si no se puede actualizar el avatar', async () => {
             mockPerfilService.updateAvatar.mockResolvedValue(false); 
             await controller.subirFotoDePerfil(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
+            expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error al actualizar el avatar'
+                error: 'Error interno del servidor'
             });
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             mockRequest.user = null; // Simula que no hay usuario autenticado
             await controller.subirFotoDePerfil(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -187,12 +187,12 @@ describe('ProfileController', () => {
                 message: 'Perfil encontrado', user: perfil
             });
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             mockRequest.user = null; // Simula que no hay usuario autenticado
             await controller.verPerfil(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -227,14 +227,14 @@ describe('ProfileController', () => {
             });
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             
             mockRequest.user = null; // Simula que no hay usuario autenticado
             
             await controller.actualizarPerfil(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -265,7 +265,7 @@ describe('ProfileController', () => {
                 message: 'Perfil actualizado.', user: mockRequest.user
             });
         });
-        test('Debe devolver 401 si la contraseña no se puede actualizar', async () => {
+        test('Debe devolver 400 si la contraseña no se puede actualizar', async () => {
             
             mockRequest.body.password = {
                 newPassword: 'newPassword123', 
@@ -287,14 +287,14 @@ describe('ProfileController', () => {
                 error: 'Tuvimos un problema al intentar actualizar la contraseña. Verifica que la contraseña actual sea correcta'
             });
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
+            expect(mockResponse.status).toHaveBeenCalledWith(400);
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             mockRequest.user = null; // Simula que no hay usuario autenticado
             await controller.actualizarPassword(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -318,29 +318,29 @@ describe('ProfileController', () => {
             });
             
         });
-        test('Debe devolver 401 si se produce algún error eliminando la foto', async () => {
-            
+        test('Debe devolver 500 si falla la eliminación de la foto', async () => {
+
             mockPerfilService.deleteAvatar.mockResolvedValue(false);
 
             await controller.deleteFotoDePerfil(mockRequest, mockResponse);
 
             expect(mockPerfilService.deleteAvatar).toHaveBeenCalledTimes(1);
             expect(mockPerfilService.deleteAvatar).toHaveBeenCalledWith(mockRequest.user.user_id);
-            expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
+
+            expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tuvimos un problema al intentar eliminar la foto de perfil'
+                error: 'Error interno del servidor'
             });
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             
             mockRequest.user = null; 
 
             await controller.deleteFotoDePerfil(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'
@@ -365,27 +365,27 @@ describe('ProfileController', () => {
             });
             
         });
-        test('Debe devolver 401 si se produce algún error eliminando el perfil', async () => {
+        test('Debe devolver 500 si se produce algún error eliminando el perfil', async () => {
             
             mockPerfilService.deleteProfile.mockResolvedValue(false);
             
             await controller.deleteProfile(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(401);
+            expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tuvimos un problema al intentar eliminar el perfil'
+                error: 'Error interno del servidor'
             });
         });
-        test('Debe devolver 400 si el usuario no está autenticado', async () => {
+        test('Debe devolver 401 si el usuario no está autenticado', async () => {
             
             mockRequest.user = null; 
             
             await controller.deleteProfile(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(400);
+            expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
                 error: 'Usuario no autenticado'

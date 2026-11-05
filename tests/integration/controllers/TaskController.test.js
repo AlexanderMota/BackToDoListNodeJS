@@ -196,7 +196,7 @@ describe('TaskController', () => {
             const req = {
                 body: {
                     task: {
-                        name: 'TaskController unauthenticated',
+                        name: 'TaskController no autenticado',
                         description: 'No debe crearse'
                     }
                 }
@@ -206,7 +206,7 @@ describe('TaskController', () => {
 
             await controller.createTarea(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.status).toHaveBeenCalledWith(401);
             expect(getResponseBody(res)).toEqual({
                 error: 'Usuario no autenticado'
             });
@@ -239,7 +239,7 @@ describe('TaskController', () => {
 
             await controller.getParentTasks({ user: null }, res);
 
-            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.status).toHaveBeenCalledWith(401);
             expect(getResponseBody(res)).toEqual({
                 error: 'Usuario no autenticado'
             });
@@ -345,7 +345,7 @@ describe('TaskController', () => {
 
             const response = getResponseBody(res);
 
-            expect(response.message).toBe('Tarea encontrada.');
+            expect(response.message).toBe('Tarea encontrada');
             expect(response.task).toBeDefined();
             expect(response.task.task_id).toBe(parentTaskId);
         });

@@ -1,62 +1,68 @@
 import TaskRepository from '../../../src/repositories/TaskRepository.js';
 import { DBPool } from '../../../src/config/dbconnection.js';
-
-const taskRepository = new TaskRepository({
-    DBPool
-});
-
-
-const createTestUser = (suffix) => ({
-    user_id: `test-task-user-${suffix}`,
-    name: 'Usuario',
-    lastname: 'Test',
-    username: `task_user_${suffix}`,
-    email: `task.user.${suffix}@example.com`,
-    phone: '600000000',
-    password: 'password_test'
-});
-
-
-const createTestTask = (user_id, suffix, extra = {}) => ({
-    name: `Tarea Test ${suffix}`,
-    description: `Descripción de prueba ${suffix}`,
-    status: 'pending',
-    priority: 'medium',
-    parent_task_id: null,
-    created_by: user_id,
-    visibility: 'private',
-    ...extra
-});
-
-
-const insertTestUser = async (user) => {
-
-    await DBPool.query(`
-        INSERT INTO users (
-            user_id,
-            name,
-            lastname,
-            username,
-            email,
-            phone,
-            password,
-            role_id
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [
-        user.user_id,
-        user.name,
-        user.lastname,
-        user.username,
-        user.email,
-        user.phone,
-        user.password,
-        5
-    ]);
-};
+import { randomUUID } from 'node:crypto';
 
 
 describe('TaskRepository', () => {
+
+    const taskRepository = new TaskRepository({
+        DBPool
+    });
+
+
+    const createTestUser = () => {
+        
+        const uniqueId = randomUUID();
+
+        return {
+            user_id: uniqueId,
+            name: 'Test',
+            lastname: 'User',
+            username: `testuser_${uniqueId}`,
+            email: `task.user.${uniqueId}@example.com`,
+            phone: '600000000',
+            password: 'password123'
+        };
+    };
+
+
+    const createTestTask = (user_id, suffix, extra = {}) => ({
+        name: `Tarea Test ${suffix}`,
+        description: `Descripción de prueba ${suffix}`,
+        status: 'pending',
+        priority: 'medium',
+        parent_task_id: null,
+        created_by: user_id,
+        visibility: 'private',
+        ...extra
+    });
+
+
+    const insertTestUser = async (user) => {
+
+        await DBPool.query(`
+            INSERT INTO users (
+                user_id,
+                name,
+                lastname,
+                username,
+                email,
+                phone,
+                password,
+                role_id
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            user.user_id,
+            user.name,
+            user.lastname,
+            user.username,
+            user.email,
+            user.phone,
+            user.password,
+            5
+        ]);
+    };
 
 
     describe('create', () => {
@@ -163,7 +169,7 @@ describe('TaskRepository', () => {
 
     describe('findSubTasks', () => {
 
-        test('debería devolver las subtareas de una tarea principal', async () => {
+        test('Debe devolver las subtareas de una tarea principal', async () => {
 
             const user = createTestUser('subtasks');
 
@@ -185,7 +191,8 @@ describe('TaskRepository', () => {
 
             const result =
                 await taskRepository.findSubTasks(
-                    parentTask.task_id
+                    parentTask.task_id,
+                    user.user_id
                 );
 
             expect(result).toEqual(
@@ -849,7 +856,7 @@ describe('TaskRepository', () => {
 
     describe('delete', () => {
 
-        test('debería eliminar una tarea correctamente', async () => {
+        test('Debe eliminar una tarea correctamente', async () => {
 
             const user = createTestUser('delete');
 

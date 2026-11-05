@@ -69,7 +69,7 @@ describe('AuthController', () => {
             });
 
         });
-        test('Debe devolver status 404 cuando crearPerfil lanza un error', async () => { 
+        test('Debe devolver status 500 cuando crearPerfil lanza un error', async () => { 
             const user = { 
                 name: 'Alexander', 
                 lastname: 'Mota', 
@@ -86,10 +86,10 @@ describe('AuthController', () => {
             expect(mockPerfilService.createProfile).toHaveBeenCalledTimes(1); 
             expect(mockPerfilService.createProfile).toHaveBeenCalledWith(user); 
             expect(mockResponse.status).toHaveBeenCalledTimes(1); 
-            expect(mockResponse.status).toHaveBeenCalledWith(404); 
+            expect(mockResponse.status).toHaveBeenCalledWith(500); 
             expect(mockResponse.json).toHaveBeenCalledTimes(1); 
             expect(mockResponse.json).toHaveBeenCalledWith(
-                { error: 'Error al crear el perfil' }
+                { error: 'Error interno del servidor' }
             ); 
         });
     });
@@ -134,7 +134,7 @@ describe('AuthController', () => {
                 { error: 'Usuario no autenticado' }
             ); 
         }); 
-        test('Debe devolver 404 cuando authService.getMe lanza un error', async () => { 
+        test('Debe devolver 500 cuando authService.getMe lanza un error', async () => { 
 
             const error = new Error('Usuario no encontrado'); 
             
@@ -145,10 +145,10 @@ describe('AuthController', () => {
             expect(mockAuthService.getMe).toHaveBeenCalledTimes(1); 
             expect(mockAuthService.getMe).toHaveBeenCalledWith('123'); 
             expect(mockResponse.status).toHaveBeenCalledTimes(1); 
-            expect(mockResponse.status).toHaveBeenCalledWith(404); 
+            expect(mockResponse.status).toHaveBeenCalledWith(500); 
             expect(mockResponse.json).toHaveBeenCalledTimes(1); 
             expect(mockResponse.json).toHaveBeenCalledWith(
-                { error: 'Usuario no encontrado' }
+                { error: 'Error interno del servidor' }
             ); 
         });
 
@@ -220,7 +220,7 @@ describe('AuthController', () => {
                 { error: 'Email y contraseña son requeridos' }
             ); 
         }); 
-        test('Debe devolver 404 cuando authService.login lanza un error', async () => { 
+        test('Debe devolver 500 cuando authService.login lanza un error', async () => { 
             const user = { 
                 email: 'alex@test.com', 
                 password: 'password123', 
@@ -235,9 +235,9 @@ describe('AuthController', () => {
             
             expect(mockAuthService.login).toHaveBeenCalledTimes(1); 
             expect(mockAuthService.login).toHaveBeenCalledWith( user.email, user.password ); 
-            expect(mockResponse.status).toHaveBeenCalledWith(404); 
+            expect(mockResponse.status).toHaveBeenCalledWith(500); 
             expect(mockResponse.json).toHaveBeenCalledWith(
-                { error: 'Credenciales incorrectas' }
+                { error: 'Error interno del servidor' }
             ); 
         });
     });
@@ -263,7 +263,7 @@ describe('AuthController', () => {
         });
 
 
-        test('Debe devolver 404 cuando ocurre un error durante el logout', async () => {
+        test('Debe devolver 500 cuando ocurre un error durante el logout', async () => {
 
             const user = {email: 'alex@test.com'};
 
@@ -280,10 +280,10 @@ describe('AuthController', () => {
             expect(mockResponse.clearCookie).toHaveBeenCalledTimes(1);
             expect(mockResponse.clearCookie).toHaveBeenCalledWith( "access_token", {"httpOnly": true, "path": "/", "sameSite": "lax", "secure": false});
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
-            expect(mockResponse.status).toHaveBeenCalledWith(404);
+            expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error al cerrar sesión'
+                error: 'Error interno del servidor'
             });
         });
     });

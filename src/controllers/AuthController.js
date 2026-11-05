@@ -12,7 +12,13 @@ class AuthController {
 
       res.status(201).json({ message: 'Perfil creado.', user: newUser });
     } catch (error) {
-      res.status(404).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   };
 
@@ -35,7 +41,13 @@ class AuthController {
         avatar_url: userData.avatar_url,
         role: user.role }});
     } catch (error) {
-      res.status(404).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
   
@@ -60,7 +72,18 @@ class AuthController {
       res.json({message: 'Login exitoso.', user: {email:user.email}});
 
     } catch (error) {
-      res.status(404).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+      if (error.message === "Contraseña incorrecta") {
+        return res.status(400).json({
+          error: 'Contraseña incorrecta'
+        });
+      }
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
 
@@ -74,7 +97,13 @@ class AuthController {
       });
       res.json({message: 'Logout exitoso.', user: {email: req.user.email}});
     } catch (error) {
-      res.status(404).json({ error: error.message });
+
+      //console.error('Error en createTarea:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+
     }
   }
 }

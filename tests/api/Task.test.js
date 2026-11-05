@@ -34,7 +34,7 @@ describe('API - Tasks', () => {
   };
 
   let agent;
-  //let secondaryAgent;
+  let secondaryAgent;
 
   let parentTaskId;
   let subTaskId;
@@ -175,7 +175,7 @@ describe('API - Tasks', () => {
     );
 
     agent = await createAuthenticatedAgent(testUser);
-    //secondaryAgent = await createAuthenticatedAgent(secondaryUser);
+    secondaryAgent = await createAuthenticatedAgent(secondaryUser);
   });
 
   afterAll(async () => {
@@ -384,7 +384,7 @@ describe('API - Tasks', () => {
       expect(response.status).toBe(200);
 
       expect(response.body).toMatchObject({
-        message: 'Tarea encontrada.',
+        message: 'Tarea encontrada',
         task: {
           task_id: parentTaskId,
           name: 'Tarea principal de prueba',
@@ -540,7 +540,6 @@ describe('API - Tasks', () => {
         description: 'Descripción actualizada',
         status: 'inprogress',
         priority: 'critical',
-        parent_task_id: null,
         visibility: 'public'
       };
 
@@ -640,6 +639,80 @@ describe('API - Tasks', () => {
       );
 
       expect(rows).toHaveLength(0);
+    });
+
+  });
+
+    
+  describe('GET /tareas/derivadas/:id - Autorización', () => {
+
+    // Convertimos al segundo usuario en colaborador de la tarea principal.
+    beforeAll(async () => {
+      await DBPool.query(
+        `INSERT INTO user_tasks (user_id, task_id)
+        VALUES (?, ?)`,
+        [secondaryUser.user_id, parentTaskId]
+      );
+    });
+
+    test('El propietario puede consultar las subtareas', async () => {
+
+      const response = await agent.get(
+        `/tareas/derivadas/${parentTaskId}`
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('tasks');
+      expect(Array.isArray(response.body.tasks)).toBe(true);
+
+      expect(
+        response.body.tasks.some(
+          task => String(task.task_id) === String(subTaskId)
+        )
+      ).toBe(true);
+    });
+
+    test('Un colaborador puede consultar las subtareas', async () => {
+
+      const response = await secondaryAgent.get(
+        `/tareas/derivadas/${parentTaskId}`
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('tasks');
+      expect(Array.isArray(response.body.tasks)).toBe(true);
+
+      expect(
+        response.body.tasks.some(
+          task => String(task.task_id) === String(subTaskId)
+        )
+      ).toBe(true);
+    });
+
+    test('Un usuario sin permisos no puede consultar las subtareas', async () => {
+
+      const response = await agent.get(
+        `/tareas/derivadas/${privateTaskId}`
+      );
+
+      expect(response.status).toBe(403);
+      expect(response.body).toHaveProperty(
+        'error',
+        'No tienes permiso para acceder a esta tarea'
+      );
+    });
+
+    test('No se pueden consultar las subtareas de una tarea inexistente', async () => {
+
+      const response = await agent.get(
+        '/tareas/derivadas/999999999'
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty(
+        'error',
+        'Tarea no encontrada'
+      );
     });
 
   });

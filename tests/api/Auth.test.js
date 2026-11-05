@@ -110,7 +110,7 @@ describe('API - Autenticación', () => {
       });
     });
 
-    test('Con usuario inexistente devuelve 404', async () => {
+    test('Con usuario inexistente devuelve 500', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -120,7 +120,7 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(500);
       expect(response.body).toHaveProperty('error');
     });
 
@@ -134,7 +134,7 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(404);
+      expect(response.status).toBe(400);
       expect(response.body).toEqual({
         error: 'Contraseña incorrecta'
       });
