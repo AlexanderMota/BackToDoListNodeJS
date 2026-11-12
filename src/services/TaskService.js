@@ -3,8 +3,21 @@ class TasksService {
     this.taskRepository = TaskRepository;
   }
   async createTarea(task) {
+    if (task.parent_task_id != null) {
+        const parentTask = await this.taskRepository.findById(
+            task.parent_task_id,
+            task.created_by
+        );
+
+        if (parentTask.created_by !== task.created_by) {
+            throw new Error(
+                'No tienes permiso para crear subtareas en esta tarea'
+            );
+        }
+    }
+
     return await this.taskRepository.create(task);
-  }
+}
   async getTareaById(task_id, user_id) {
     return await this.taskRepository.findById(task_id, user_id);
   }

@@ -84,7 +84,7 @@ class AuthController {
     } catch (error) {
 
       if (error.message === "Contraseña incorrecta") {
-        return res.status(401).json({
+        return res.status(400).json({
           error: 'Credenciales incorrectas'
         });
       }

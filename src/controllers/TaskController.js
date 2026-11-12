@@ -43,10 +43,23 @@ class TaskController {
       });
 
     } catch (error) {
-      //console.error('Error en createTarea:', error);
+      if (error.message === 'Tarea no encontrada') {
+          return res.status(404).json({
+              error: error.message
+          });
+      }
+
+      if (
+          error.message === 'No tienes permiso para acceder a esta tarea' ||
+          error.message === 'No tienes permiso para crear subtareas en esta tarea'
+      ) {
+          return res.status(403).json({
+              error: error.message
+          });
+      }
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+          error: 'Error interno del servidor'
       });
     }
   };

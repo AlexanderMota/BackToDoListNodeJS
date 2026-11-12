@@ -40,25 +40,91 @@ class TaskRepository {
     return rows;
   }
   async findSubTasks(parent_task_id, user_id) {
-    await this.findById(parent_task_id, user_id);
+    const parentTask = await this.findById(parent_task_id, user_id);
+    const isOwner = parentTask.created_by === user_id;
+
+    const [collaborators] = await this.DBPool.query(`
+      SELECT 1
+      FROM user_tasks
+      WHERE task_id = ?
+        AND user_id = ?
+      LIMIT 1
+    `, [parent_task_id, user_id]);
+
+    const isCollaborator = collaborators.length > 0;
 
     const [rows] = await this.DBPool.query(`
-        SELECT *
-        FROM tasks t
-        WHERE t.parent_task_id = ?
-        AND (
-            t.created_by = ?
-            OR t.visibility = 'public'
-            OR EXISTS (
-                SELECT 1
-                FROM user_tasks ut
-                WHERE ut.task_id = t.task_id
-                AND ut.user_id = ?
-            )
-        )
-    `, [parent_task_id, user_id, user_id]);
+      SELECT
+        t.*,
 
-    return rows;
+        rt.request_id AS request_id,
+        rt.task_id AS request_task_id,
+        rt.user_id AS request_user_id,
+        rt.sender_user_id AS request_sender_user_id,
+        rt.status AS request_status,
+        rt.created_at AS request_created_at,
+        rt.updated_at AS request_updated_at
+
+      FROM tasks t
+
+      LEFT JOIN requests_task rt
+        ON rt.task_id = t.task_id
+        AND rt.user_id = ?
+        AND rt.status = 'pending'
+
+      WHERE t.parent_task_id = ?
+        AND (
+          ? = 1
+
+          OR (
+            t.visibility = 'public'
+            AND ? = 1
+          )
+
+          OR EXISTS (
+            SELECT 1
+            FROM user_tasks ut
+            WHERE ut.task_id = t.task_id
+              AND ut.user_id = ?
+          )
+
+          OR rt.request_id IS NOT NULL
+        )
+    `, [
+      user_id,
+      parent_task_id,
+      isOwner ? 1 : 0,
+      isCollaborator ? 1 : 0,
+      user_id
+    ]);
+
+    return rows.map(row => {
+      const {
+        request_id,
+        request_task_id,
+        request_user_id,
+        request_sender_user_id,
+        request_status,
+        request_created_at,
+        request_updated_at,
+        ...task
+      } = row;
+
+      return {
+        ...task,
+        request_task: request_id == null
+          ? null
+          : {
+              request_id,
+              task_id: request_task_id,
+              user_id: request_user_id,
+              sender_user_id: request_sender_user_id,
+              status: request_status,
+              created_at: request_created_at,
+              updated_at: request_updated_at
+            }
+      };
+    });
   }
   
   async findPublicTasks(user_id) {
@@ -66,6 +132,7 @@ class TaskRepository {
       SELECT *
       FROM tasks
       WHERE visibility = 'public' 
+        AND parent_task_id IS NULL
         AND created_by <> ? 
         AND NOT EXISTS (
           SELECT 1
@@ -89,58 +156,100 @@ class TaskRepository {
     return rows;
   }
   async findTasksByCollabRequest(user_id) {
-    const [rows] = await this.DBPool.query(`
-        SELECT tasks.*
-        FROM tasks JOIN requests_task 
-        ON tasks.task_id = requests_task.task_id 
-        WHERE requests_task.user_id = ? AND requests_task.status = 'pending'
-      `, [user_id]
-    );
-    return rows;
-  }
+  const [rows] = await this.DBPool.query(`
+    SELECT
+      tasks.*,
+
+      requests_task.request_id AS request_id,
+      requests_task.task_id AS request_task_id,
+      requests_task.user_id AS request_user_id,
+      requests_task.sender_user_id AS request_sender_user_id,
+      requests_task.status AS request_status,
+      requests_task.created_at AS request_created_at,
+      requests_task.updated_at AS request_updated_at
+
+    FROM tasks
+    JOIN requests_task
+      ON tasks.task_id = requests_task.task_id
+
+    WHERE tasks.created_by = ?
+      AND requests_task.sender_user_id IS NULL
+      AND requests_task.status = 'pending'
+      AND tasks.parent_task_id IS NULL
+  `, [user_id]);
+
+  return rows.map(row => {
+    const {
+      request_id,
+      request_task_id,
+      request_user_id,
+      request_sender_user_id,
+      request_status,
+      request_created_at,
+      request_updated_at,
+      ...task
+    } = row;
+
+    return {
+      ...task,
+      request_task: {
+        request_id,
+        task_id: request_task_id,
+        user_id: request_user_id,
+        sender_user_id: request_sender_user_id,
+        status: request_status,
+        created_at: request_created_at,
+        updated_at: request_updated_at
+      }
+    };
+  });
+}
   async findById(task_id, user_id) {
-
-    const [rows] = await this.DBPool.query(`
-      SELECT
-        t.*,
-        u.username,
-        u.avatar_url
-      FROM tasks t
-      JOIN users u
-        ON u.user_id = t.created_by
-      WHERE t.task_id = ?
-        AND (
-          t.created_by = ?
-          OR EXISTS (
-            SELECT 1
-            FROM user_tasks ut
-            WHERE ut.task_id = t.task_id
-              AND ut.user_id = ?
-          )
-          OR EXISTS (
-            SELECT 1
-            FROM requests_task rt
-            WHERE rt.task_id = t.task_id
-              AND rt.user_id = ?
-              AND rt.status = 'pending'
-          )
-          OR t.visibility = 'public'
+  const [rows] = await this.DBPool.query(`
+    SELECT
+      t.*,
+      u.username,
+      u.avatar_url
+    FROM tasks t
+    JOIN users u ON u.user_id = t.created_by
+    WHERE t.task_id = ?
+      AND (
+        t.created_by = ?
+        OR EXISTS (
+          SELECT 1
+          FROM user_tasks ut
+          WHERE ut.task_id = t.task_id
+            AND ut.user_id = ?
         )
-    `, [task_id, user_id, user_id, user_id]);
+        OR (
+          t.parent_task_id IS NULL
+          AND t.visibility = 'public'
+        )
+        OR EXISTS (
+          SELECT 1
+          FROM user_tasks ut
+          JOIN tasks parent
+            ON parent.task_id = t.parent_task_id
+          WHERE ut.task_id = parent.task_id
+            AND ut.user_id = ?
+            AND t.visibility = 'public'
+        )
+      )
+  `, [task_id, user_id, user_id, user_id]);
 
-    if (rows.length) return rows[0];
+  if (rows.length) return rows[0];
 
-    const [taskExists] = await this.DBPool.query(
-      'SELECT task_id FROM tasks WHERE task_id = ?',
-      [task_id]
-    );
+  const [taskExists] = await this.DBPool.query(
+    'SELECT task_id FROM tasks WHERE task_id = ?',
+    [task_id]
+  );
 
-    if (!taskExists.length) {
-      throw new Error('Tarea no encontrada');
-    }
-
-    throw new Error('No tienes permiso para acceder a esta tarea');
+  if (!taskExists.length) {
+    throw new Error('Tarea no encontrada');
   }
+
+  throw new Error('No tienes permiso para acceder a esta tarea');
+}
   
 
   async findPriorities() {
