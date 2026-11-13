@@ -162,7 +162,6 @@ class UserRepository {
 
     return rows.length > 0 ? profile : null;
   }
-
   async updatePassword( user_id, currentPassword, newPassword ){
 
     const [result] = await this.DBPool.query(
@@ -181,6 +180,61 @@ class UserRepository {
     return result.affectedRows > 0;
 
 
+  }
+
+  async updatePasswordByUserId(user_id, newPassword) {
+    const [result] = await this.DBPool.query(`
+      UPDATE users
+      SET
+        password = ?,
+        updated_at = NOW()
+      WHERE user_id = ?
+    `, [newPassword, user_id]);
+
+    return result.affectedRows > 0;
+  }
+  async createToken(user_id, token_hash, expires_at) {
+    const [result] = await this.DBPool.query(`
+      INSERT INTO password_reset_tokens (
+        user_id,
+        token_hash,
+        expires_at
+      )
+      VALUES (?, ?, ?)
+    `, [user_id, token_hash, expires_at]);
+
+    return result.insertId;
+  }
+  async findValidToken(token_hash) {
+    const [rows] = await this.DBPool.query(`
+      SELECT
+        reset_id,
+        user_id,
+        token_hash,
+        expires_at
+      FROM password_reset_tokens
+      WHERE token_hash = ?
+        AND expires_at > NOW()
+      LIMIT 1
+    `, [token_hash]);
+
+    return rows.length ? rows[0] : null;
+  }
+  async deleteToken(token_hash) {
+    const [result] = await this.DBPool.query(`
+      DELETE FROM password_reset_tokens
+      WHERE token_hash = ?
+    `, [token_hash]);
+
+    return result.affectedRows > 0;
+  }
+  async deleteUserTokens(user_id) {
+    const [result] = await this.DBPool.query(`
+      DELETE FROM password_reset_tokens
+      WHERE user_id = ?
+    `, [user_id]);
+
+    return result.affectedRows;
   }
 
   async delete(user_id) {

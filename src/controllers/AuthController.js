@@ -60,7 +60,6 @@ class AuthController {
 
     }
   }
-  
   login = async (req, res) => {
     try {
       const { user } = req.body;
@@ -94,7 +93,6 @@ class AuthController {
       });
     }
   }
-
   logout = async (req, res) => {
     try {
         res.clearCookie('access_token', {
@@ -115,6 +113,83 @@ class AuthController {
         });
     }
   }
+
+  forgotPassword = async (req, res) => {
+    try {
+      const { email } = req.body ?? {};
+      console.log('Email recibido en forgotPassword:', email);
+
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({
+          error: 'Debes proporcionar un correo electrónico válido'
+        });
+      }
+
+      await this.authService.forgotPassword(email);
+
+      return res.status(200).json({
+        message: 'Si el correo está registrado, recibirás un enlace para recuperar tu contraseña.',
+        user: {}
+      });
+
+    } catch (error) {
+      console.error('Error en forgotPassword:', error);
+      if (error.message === 'Debes proporcionar un correo electrónico válido') {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+    }
+  };
+  resetPassword = async (req, res) => {
+    try {
+      const { token, password } = req.body ?? {};
+
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({
+          error: 'El token de recuperación no es válido'
+        });
+      }
+
+      if (!password || typeof password !== 'string') {
+        return res.status(400).json({
+          error: 'Debes proporcionar una contraseña válida'
+        });
+      }
+
+      if (password.length < 8) {
+        return res.status(400).json({
+          error: 'La contraseña debe tener al menos 8 caracteres'
+        });
+      }
+
+      await this.authService.resetPassword(token, password);
+
+      return res.status(200).json({
+        message: 'Contraseña actualizada correctamente.',
+        user: {}
+      });
+
+    } catch (error) {
+      console.error('Error en resetPassword:', error);
+
+      if (
+        error.message === 'El enlace de recuperación no es válido o ha caducado' ||
+        error.message === 'Token de recuperación inválido'
+      ) {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+    }
+  };
 }
 
 export default AuthController;

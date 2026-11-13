@@ -13,7 +13,7 @@ import routes from './routes/routes.js';
 import { AuthController, ProfileController, TaskController, CommentsController, CollaboratorsController } from './controllers/index.js';
 
 // servicios
-import { AuthService, ProfileService, TaskService, CommentsService, CollaboratorsService } from './services/index.js';
+import { AuthService, ProfileService, TaskService, CommentsService, CollaboratorsService, MailService } from './services/index.js';
 
 // repositorios
 import { UserRepository, TaskRepository, CommentsRepository, CollaboratorsRepository } from './repositories/index.js';
@@ -59,7 +59,8 @@ container.register({
   ProfileService: asClass(ProfileService).singleton(),
   TaskService: asClass(TaskService).singleton(),
   CommentsService: asClass(CommentsService).singleton(),
-  CollaboratorsService: asClass(CollaboratorsService).singleton()
+  CollaboratorsService: asClass(CollaboratorsService).singleton(),
+  MailService: asClass(MailService).singleton()
 });
 
 // Registrar Repositorios
