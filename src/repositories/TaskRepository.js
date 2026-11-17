@@ -145,17 +145,62 @@ class TaskRepository {
     return rows;
   }
 
-  async findTasksByCollaborating(user_id) {
-    const [rows] = await this.DBPool.query(`
-        SELECT tasks.*
-        FROM tasks 
-        JOIN user_tasks 
-          ON tasks.task_id = user_tasks.task_id 
-       WHERE user_tasks.user_id = ?
-      `, [user_id]);
-    return rows;
-  }
-  async findTasksByCollabRequest(user_id) {
+async findTasksByCollaborating(user_id) {
+  const [rows] = await this.DBPool.query(`
+    WITH RECURSIVE
+
+    -- Tareas en las que colaboramos directamente.
+    collaborating_tasks AS (
+      SELECT DISTINCT
+        t.task_id,
+        t.parent_task_id
+      FROM tasks t
+      JOIN user_tasks ut
+        ON ut.task_id = t.task_id
+      WHERE ut.user_id = ?
+    ),
+
+    -- Antepasados de cada tarea colaborada.
+    task_ancestors (task_id, ancestor_id) AS (
+
+      SELECT
+        ct.task_id,
+        ct.parent_task_id
+      FROM collaborating_tasks ct
+      WHERE ct.parent_task_id IS NOT NULL
+
+      UNION DISTINCT
+
+      SELECT
+        ta.task_id,
+        parent.parent_task_id
+      FROM task_ancestors ta
+      JOIN tasks parent
+        ON parent.task_id = ta.ancestor_id
+      WHERE parent.parent_task_id IS NOT NULL
+    )
+
+    SELECT t.*
+    FROM collaborating_tasks ct
+    JOIN tasks t
+      ON t.task_id = ct.task_id
+
+    WHERE NOT EXISTS (
+
+      SELECT 1
+      FROM task_ancestors ta
+      JOIN collaborating_tasks ancestor
+        ON ancestor.task_id = ta.ancestor_id
+
+      WHERE ta.task_id = ct.task_id
+
+    )
+
+  `, [user_id]);
+
+  return rows;
+}
+async findTasksByCollabRequest(user_id) {
   const [rows] = await this.DBPool.query(`
     SELECT
       tasks.*,
@@ -172,11 +217,50 @@ class TaskRepository {
     JOIN requests_task
       ON tasks.task_id = requests_task.task_id
 
-    WHERE tasks.created_by = ?
-      AND requests_task.sender_user_id IS NULL
-      AND requests_task.status = 'pending'
-      AND tasks.parent_task_id IS NULL
-  `, [user_id]);
+    WHERE requests_task.status = 'pending'
+      AND (
+
+        -- 1. Invitación recibida en una tarea ajena.
+        (
+          requests_task.user_id = ?
+          AND requests_task.sender_user_id = tasks.created_by
+          AND tasks.created_by <> ?
+        )
+
+        OR
+
+        -- 2. Solicitud recibida en una tarea propia.
+        (
+          tasks.created_by = ?
+          AND requests_task.sender_user_id IS NULL
+          AND requests_task.user_id <> ?
+        )
+
+        OR
+
+        -- 3. Solicitud de colaboración enviada por nosotros.
+        (
+          requests_task.user_id = ?
+          AND requests_task.sender_user_id IS NULL
+          AND tasks.created_by <> ?
+        )
+
+        OR
+
+        -- 4. Invitación enviada por nosotros.
+        (
+          tasks.created_by = ?
+          AND requests_task.sender_user_id = ?
+          AND requests_task.user_id <> ?
+        )
+
+      )
+  `, [
+    user_id, user_id,
+    user_id, user_id,
+    user_id, user_id,
+    user_id, user_id, user_id
+  ]);
 
   return rows.map(row => {
     const {
