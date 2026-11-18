@@ -47,7 +47,7 @@ class AuthService {
     const valid = await this.userValidations.validateEmail(email);
 
     if (!valid) {
-      throw new Error('Formato email incorrecto');
+      throw new Error('Formato email incorrecto.');
     }
 
     const user = await this.userRepository.findByEmail(email);

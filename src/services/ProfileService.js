@@ -5,18 +5,23 @@ import path from "path";
 
 class ProfileService {
 
-  constructor({ UserRepository }) {
+  constructor({ UserRepository,UserValidations }) {
     this.userRepository = UserRepository;
+    this.userValidations = UserValidations;
   }
 
   async createProfile(user) {
 
+    const valid = await this.userValidations.validateEmail(user.email);
+
+    if (!valid) {
+      throw new Error('Formato email incorrecto.');
+    }
     user.user_id = randomUUID();
     user.password = await bcrypt.hash(user.password, 10);
 
     return await this.userRepository.register(user);
   }
-
   async getUserById(user_id) {
     const user = await this.userRepository.findById(user_id);
 
@@ -78,12 +83,7 @@ class ProfileService {
 
     const user = await this.userRepository.findById(user_id);
 
-    if(user) {
-     /* if (user.password.startsWith('$2b$')) */
-        valid = await bcrypt.compare(currentPassword, user.password);
-      /*else
-        valid = currentPassword === user.password;*/
-    }
+    if(user) valid = await bcrypt.compare(currentPassword, user.password)
     
     if (!valid) throw new Error('Contraseña incorrecta');
 

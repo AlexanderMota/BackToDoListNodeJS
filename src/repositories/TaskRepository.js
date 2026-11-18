@@ -126,7 +126,6 @@ class TaskRepository {
       };
     });
   }
-  
   async findPublicTasks(user_id) {
     const [rows] = await this.DBPool.query(`
       SELECT *
@@ -144,198 +143,195 @@ class TaskRepository {
     );
     return rows;
   }
+  async findTasksByCollaborating(user_id) {
+    const [rows] = await this.DBPool.query(`
+      WITH RECURSIVE
 
-async findTasksByCollaborating(user_id) {
-  const [rows] = await this.DBPool.query(`
-    WITH RECURSIVE
+      -- Tareas en las que colaboramos directamente.
+      collaborating_tasks AS (
+        SELECT DISTINCT
+          t.task_id,
+          t.parent_task_id
+        FROM tasks t
+        JOIN user_tasks ut
+          ON ut.task_id = t.task_id
+        WHERE ut.user_id = ?
+      ),
 
-    -- Tareas en las que colaboramos directamente.
-    collaborating_tasks AS (
-      SELECT DISTINCT
-        t.task_id,
-        t.parent_task_id
-      FROM tasks t
-      JOIN user_tasks ut
-        ON ut.task_id = t.task_id
-      WHERE ut.user_id = ?
-    ),
+      -- Antepasados de cada tarea colaborada.
+      task_ancestors (task_id, ancestor_id) AS (
 
-    -- Antepasados de cada tarea colaborada.
-    task_ancestors (task_id, ancestor_id) AS (
+        SELECT
+          ct.task_id,
+          ct.parent_task_id
+        FROM collaborating_tasks ct
+        WHERE ct.parent_task_id IS NOT NULL
 
-      SELECT
-        ct.task_id,
-        ct.parent_task_id
+        UNION DISTINCT
+
+        SELECT
+          ta.task_id,
+          parent.parent_task_id
+        FROM task_ancestors ta
+        JOIN tasks parent
+          ON parent.task_id = ta.ancestor_id
+        WHERE parent.parent_task_id IS NOT NULL
+      )
+
+      SELECT t.*
       FROM collaborating_tasks ct
-      WHERE ct.parent_task_id IS NOT NULL
+      JOIN tasks t
+        ON t.task_id = ct.task_id
 
-      UNION DISTINCT
+      WHERE NOT EXISTS (
 
-      SELECT
-        ta.task_id,
-        parent.parent_task_id
-      FROM task_ancestors ta
-      JOIN tasks parent
-        ON parent.task_id = ta.ancestor_id
-      WHERE parent.parent_task_id IS NOT NULL
-    )
+        SELECT 1
+        FROM task_ancestors ta
+        JOIN collaborating_tasks ancestor
+          ON ancestor.task_id = ta.ancestor_id
 
-    SELECT t.*
-    FROM collaborating_tasks ct
-    JOIN tasks t
-      ON t.task_id = ct.task_id
-
-    WHERE NOT EXISTS (
-
-      SELECT 1
-      FROM task_ancestors ta
-      JOIN collaborating_tasks ancestor
-        ON ancestor.task_id = ta.ancestor_id
-
-      WHERE ta.task_id = ct.task_id
-
-    )
-
-  `, [user_id]);
-
-  return rows;
-}
-async findTasksByCollabRequest(user_id) {
-  const [rows] = await this.DBPool.query(`
-    SELECT
-      tasks.*,
-
-      requests_task.request_id AS request_id,
-      requests_task.task_id AS request_task_id,
-      requests_task.user_id AS request_user_id,
-      requests_task.sender_user_id AS request_sender_user_id,
-      requests_task.status AS request_status,
-      requests_task.created_at AS request_created_at,
-      requests_task.updated_at AS request_updated_at
-
-    FROM tasks
-    JOIN requests_task
-      ON tasks.task_id = requests_task.task_id
-
-    WHERE requests_task.status = 'pending'
-      AND (
-
-        -- 1. Invitación recibida en una tarea ajena.
-        (
-          requests_task.user_id = ?
-          AND requests_task.sender_user_id = tasks.created_by
-          AND tasks.created_by <> ?
-        )
-
-        OR
-
-        -- 2. Solicitud recibida en una tarea propia.
-        (
-          tasks.created_by = ?
-          AND requests_task.sender_user_id IS NULL
-          AND requests_task.user_id <> ?
-        )
-
-        OR
-
-        -- 3. Solicitud de colaboración enviada por nosotros.
-        (
-          requests_task.user_id = ?
-          AND requests_task.sender_user_id IS NULL
-          AND tasks.created_by <> ?
-        )
-
-        OR
-
-        -- 4. Invitación enviada por nosotros.
-        (
-          tasks.created_by = ?
-          AND requests_task.sender_user_id = ?
-          AND requests_task.user_id <> ?
-        )
+        WHERE ta.task_id = ct.task_id
 
       )
-  `, [
-    user_id, user_id,
-    user_id, user_id,
-    user_id, user_id,
-    user_id, user_id, user_id
-  ]);
 
-  return rows.map(row => {
-    const {
-      request_id,
-      request_task_id,
-      request_user_id,
-      request_sender_user_id,
-      request_status,
-      request_created_at,
-      request_updated_at,
-      ...task
-    } = row;
+    `, [user_id]);
 
-    return {
-      ...task,
-      request_task: {
-        request_id,
-        task_id: request_task_id,
-        user_id: request_user_id,
-        sender_user_id: request_sender_user_id,
-        status: request_status,
-        created_at: request_created_at,
-        updated_at: request_updated_at
-      }
-    };
-  });
-}
-  async findById(task_id, user_id) {
-  const [rows] = await this.DBPool.query(`
-    SELECT
-      t.*,
-      u.username,
-      u.avatar_url
-    FROM tasks t
-    JOIN users u ON u.user_id = t.created_by
-    WHERE t.task_id = ?
-      AND (
-        t.created_by = ?
-        OR EXISTS (
-          SELECT 1
-          FROM user_tasks ut
-          WHERE ut.task_id = t.task_id
-            AND ut.user_id = ?
-        )
-        OR (
-          t.parent_task_id IS NULL
-          AND t.visibility = 'public'
-        )
-        OR EXISTS (
-          SELECT 1
-          FROM user_tasks ut
-          JOIN tasks parent
-            ON parent.task_id = t.parent_task_id
-          WHERE ut.task_id = parent.task_id
-            AND ut.user_id = ?
-            AND t.visibility = 'public'
-        )
-      )
-  `, [task_id, user_id, user_id, user_id]);
-
-  if (rows.length) return rows[0];
-
-  const [taskExists] = await this.DBPool.query(
-    'SELECT task_id FROM tasks WHERE task_id = ?',
-    [task_id]
-  );
-
-  if (!taskExists.length) {
-    throw new Error('Tarea no encontrada');
+    return rows;
   }
+  async findTasksByCollabRequest(user_id) {
+    const [rows] = await this.DBPool.query(`
+      SELECT
+        tasks.*,
 
-  throw new Error('No tienes permiso para acceder a esta tarea');
-}
-  
+        requests_task.request_id AS request_id,
+        requests_task.task_id AS request_task_id,
+        requests_task.user_id AS request_user_id,
+        requests_task.sender_user_id AS request_sender_user_id,
+        requests_task.status AS request_status,
+        requests_task.created_at AS request_created_at,
+        requests_task.updated_at AS request_updated_at
 
+      FROM tasks
+      JOIN requests_task
+        ON tasks.task_id = requests_task.task_id
+
+      WHERE requests_task.status = 'pending'
+        AND (
+
+          -- 1. Invitación recibida en una tarea ajena.
+          (
+            requests_task.user_id = ?
+            AND requests_task.sender_user_id = tasks.created_by
+            AND tasks.created_by <> ?
+          )
+
+          OR
+
+          -- 2. Solicitud recibida en una tarea propia.
+          (
+            tasks.created_by = ?
+            AND requests_task.sender_user_id IS NULL
+            AND requests_task.user_id <> ?
+          )
+
+          OR
+
+          -- 3. Solicitud de colaboración enviada por nosotros.
+          (
+            requests_task.user_id = ?
+            AND requests_task.sender_user_id IS NULL
+            AND tasks.created_by <> ?
+          )
+
+          OR
+
+          -- 4. Invitación enviada por nosotros.
+          (
+            tasks.created_by = ?
+            AND requests_task.sender_user_id = ?
+            AND requests_task.user_id <> ?
+          )
+
+        )
+    `, [
+      user_id, user_id,
+      user_id, user_id,
+      user_id, user_id,
+      user_id, user_id, user_id
+    ]);
+
+    return rows.map(row => {
+      const {
+        request_id,
+        request_task_id,
+        request_user_id,
+        request_sender_user_id,
+        request_status,
+        request_created_at,
+        request_updated_at,
+        ...task
+      } = row;
+
+      return {
+        ...task,
+        request_task: {
+          request_id,
+          task_id: request_task_id,
+          user_id: request_user_id,
+          sender_user_id: request_sender_user_id,
+          status: request_status,
+          created_at: request_created_at,
+          updated_at: request_updated_at
+        }
+      };
+    });
+  }
+    async findById(task_id, user_id) {
+    const [rows] = await this.DBPool.query(`
+      SELECT
+        t.*,
+        u.username,
+        u.avatar_url
+      FROM tasks t
+      JOIN users u ON u.user_id = t.created_by
+      WHERE t.task_id = ?
+        AND (
+          t.created_by = ?
+          OR EXISTS (
+            SELECT 1
+            FROM user_tasks ut
+            WHERE ut.task_id = t.task_id
+              AND ut.user_id = ?
+          )
+          OR (
+            t.parent_task_id IS NULL
+            AND t.visibility = 'public'
+          )
+          OR EXISTS (
+            SELECT 1
+            FROM user_tasks ut
+            JOIN tasks parent
+              ON parent.task_id = t.parent_task_id
+            WHERE ut.task_id = parent.task_id
+              AND ut.user_id = ?
+              AND t.visibility = 'public'
+          )
+        )
+    `, [task_id, user_id, user_id, user_id]);
+
+    if (rows.length) return rows[0];
+
+    const [taskExists] = await this.DBPool.query(
+      'SELECT task_id FROM tasks WHERE task_id = ?',
+      [task_id]
+    );
+
+    if (!taskExists.length) {
+      throw new Error('Tarea no encontrada');
+    }
+
+    throw new Error('No tienes permiso para acceder a esta tarea');
+  }
   async findPriorities() {
     const [rows] = await this.DBPool.query("SHOW COLUMNS FROM tasks LIKE 'priority'");
     

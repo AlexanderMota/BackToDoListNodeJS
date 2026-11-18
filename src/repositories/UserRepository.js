@@ -182,6 +182,7 @@ class UserRepository {
 
   }
 
+  /* conjunto de funciones para recuperar cuenta tras olvidar la contraseña */
   async updatePasswordByUserId(user_id, newPassword) {
     const [result] = await this.DBPool.query(`
       UPDATE users

@@ -18,8 +18,12 @@ class AuthController {
       res.status(201).json({ message: 'Perfil creado.', user: newUser });
     } catch (error) {
 
-      //console.error('Error en createTarea:', error);
+      if(error.code === 'ER_DUP_ENTRY'){
+        return res.status(400).json({
+          error: 'Este email ya se encuentra registrado en la aplicación.'
+        });
 
+      }
       return res.status(500).json({
         error: 'Error interno del servidor'
       });
@@ -81,8 +85,8 @@ class AuthController {
       res.json({message: 'Login exitoso.', user: {email:user.email}});
 
     } catch (error) {
-
-      if (error.message === "Contraseña incorrecta") {
+      console.log(error);
+      if (error.message === "Contraseña incorrecta" || "Usuario no encontrado") {
         return res.status(400).json({
           error: 'Credenciales incorrectas'
         });
@@ -117,11 +121,11 @@ class AuthController {
   forgotPassword = async (req, res) => {
     try {
       const { email } = req.body ?? {};
-      console.log('Email recibido en forgotPassword:', email);
+      //console.log('Email recibido en forgotPassword:', email);
 
       if (!email || typeof email !== 'string') {
         return res.status(400).json({
-          error: 'Debes proporcionar un correo electrónico válido'
+          error: 'Debes proporcionar un correo electrónico válido.'
         });
       }
 
@@ -133,8 +137,8 @@ class AuthController {
       });
 
     } catch (error) {
-      console.error('Error en forgotPassword:', error);
-      if (error.message === 'Debes proporcionar un correo electrónico válido') {
+      //console.error('Error en forgotPassword:', error);
+      if (error.message === 'Debes proporcionar un correo electrónico válido.' || 'Formato email incorrecto.') {
         return res.status(400).json({
           error: error.message
         });
