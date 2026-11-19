@@ -8,32 +8,117 @@ class AuthService {
     this.userValidations = UserValidations;
     this.mailService = MailService;
   }
+  async sendVerificationEmail(user) {
 
+    if (user.email_verified) {
+      return;
+    }
+
+    const token = crypto.randomBytes(32).toString('hex');
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+
+    await this.userRepository.deleteVerificationToken(user.user_id);
+
+    await this.userRepository.createVerificationToken(
+      user.user_id,
+      tokenHash,
+      expiresAt
+    );
+
+    const verificationUrl =
+      `${process.env.FRONTEND_URL}/verify-email?token=${encodeURIComponent(token)}`;
+
+    try {
+      await this.mailService.sendVerificationEmail(
+        user.email,
+        verificationUrl
+      );
+    } catch (error) {
+      await this.userRepository.deleteVerificationToken(tokenHash);
+      throw error;
+    }
+  }
+  async verifyEmail(token) {
+    if (!token || typeof token !== 'string') {
+      throw new Error('Token de verificación inválido');
+    }
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const verification = await this.userRepository.findValidVerificationToken(
+      tokenHash
+    );
+
+    if (!verification) {
+      throw new Error('El enlace de verificación no es válido o ha caducado');
+    }
+
+    const verified = await this.userRepository.verifyUserEmail(
+      verification.user_id
+    );
+
+    if (!verified) {
+      throw new Error('No se pudo verificar el correo electrónico');
+    }
+
+    await this.userRepository.deleteVerificationToken(
+      verification.user_id
+    );
+  }
+  async resendVerificationEmail(email) {
+    const valid = await this.userValidations.validateEmail(email);
+
+    if (!valid) {
+      throw new Error('Formato email incorrecto.');
+    }
+
+    const user = await this.userRepository.findByEmail(email);
+
+    // No revelamos si el correo existe o está verificado.
+    if (!user || user.email_verified) {
+      return;
+    }
+
+    await this.sendVerificationEmail(user);
+  }
   async getMe(id) {
     const user = await this.userRepository.findById(id);
     if (!user) throw new Error('Usuario no encontrado');
     return user;
   }
   async login(email, password) {
-    let valid = false;
+    const validEmail = await this.userValidations.validateEmail(email);
 
-    valid = await this.userValidations.validateEmail(email);
+    if (!validEmail) {
+      throw new Error('Formato email incorrecto');
+    }
 
-    if (!valid) throw new Error('Formato email incorrecto');
     const user = await this.userRepository.findByEmail(email);
 
-    if (!user) throw new Error('Usuario no encontrado');
+    if (!user) {
+      throw new Error('Usuario no encontrado');
+    }
 
-    // MUY IMPORTANTE: Reactivar esta linea ya que es la que compara la contraseña introducida por el usuario con la contraseña hasheada que debe haber almacenada en la base de datos. Desactivamos solo para pruebas.
-    //if (!this.userValidations.validateComparePassword(password, user.password)) throw new Error('Contraseña incorrecta');
-    //if (user.password.startsWith('$2b$')) 
-      valid = await bcrypt.compare(password, user.password);
-    //else valid = password === user.password;
-    
+    const validPassword = await bcrypt.compare(password, user.password);
 
-    if (!valid) throw new Error('Contraseña incorrecta');
+    if (!validPassword) {
+      throw new Error('Contraseña incorrecta');
+    }
 
-    // Generar JWT
+    // Comprobar que el correo está verificado
+    if (!user.email_verified) {
+      throw new Error('Correo electrónico no verificado');
+    }
+
     const token = jwt.sign(
       { user_id: user.user_id, role: user.role },
       process.env.JWT_SECRET,

@@ -94,6 +94,36 @@ class MailService {
 
     return info;
   }
+  async sendVerificationEmail(to, verificationUrl) {
+    const transporter = await this.getTransporter();
+
+    const from = this.testAccount
+      ? `"Soporte" <${this.testAccount.user}>`
+      : process.env.SMTP_FROM || process.env.SMTP_USER;
+
+    const info = await transporter.sendMail({
+      from,
+      to,
+      subject: 'Verifica tu correo electrónico',
+      text: `Accede al siguiente enlace para verificar tu correo electrónico: ${verificationUrl}`,
+      html: `
+        <h2>Verificación de correo electrónico</h2>
+        <p>Haz clic en el siguiente enlace para verificar tu cuenta:</p>
+        <a href="${verificationUrl}">Verificar correo electrónico</a>
+        <p>Este enlace caduca en 24 horas.</p>
+        <p>Si no has creado esta cuenta, ignora este correo.</p>
+      `
+    });
+
+    if (this.testAccount) {
+      console.log(
+        'Vista previa del correo:',
+        nodemailer.getTestMessageUrl(info)
+      );
+    }
+
+    return info;
+  }
 }
 
 export default MailService;

@@ -7,27 +7,132 @@ class AuthController {
 
   createProfile = async (req, res) => {
     try {
-      if (!req.body?.user || typeof req.body.user !== 'object') {
+      if (
+        !req.body?.user ||
+        typeof req.body.user !== 'object' ||
+        Array.isArray(req.body.user)
+      ) {
         return res.status(400).json({
           error: 'Los datos del usuario son requeridos'
         });
       }
+
       const { user } = req.body;
+
       const newUser = await this.perfilService.createProfile(user);
 
-      res.status(201).json({ message: 'Perfil creado.', user: newUser });
-    } catch (error) {
+      // El usuario ya está registrado.
+      // El envío del correo se gestiona por separado.
+      let emailSent = false;
 
-      if(error.code === 'ER_DUP_ENTRY'){
+      try {
+        await this.authService.sendVerificationEmail(newUser);
+        emailSent = true;
+      } catch (error) {
+        console.error('Error enviando correo de verificación:', error);
+      }
+
+      return res.status(201).json({
+        message: emailSent
+          ? 'Perfil creado. Revisa tu correo electrónico para verificar tu cuenta.'
+          : 'Perfil creado, pero no se pudo enviar el correo de verificación. Solicita un nuevo enlace.',
+        emailSent,
+        user: newUser
+      });
+
+    } catch (error) {
+      
+      console.error('Error creando perfil:', error);
+      if (error.sqlMessage === 'Column \'username\' cannot be null') {
+        return res.status(400).json({
+          error: 'Debe indicar un nick para la cuenta.'
+        });
+      }
+      if (error.code === 'ER_DUP_ENTRY') {
+        if(error.sqlMessage?.includes('users.username_UNIQUE')){
+          return res.status(400).json({
+            error: 'Este nickname ya se encuentra registrado en la aplicación.'
+          });
+        }
         return res.status(400).json({
           error: 'Este email ya se encuentra registrado en la aplicación.'
         });
-
       }
+
+      if (error.message === 'Formato email incorrecto.') {
+        return res.status(404).json({
+          error: error.message
+        });
+      }
+
+
       return res.status(500).json({
         error: 'Error interno del servidor'
       });
+    }
+  };
+  verifyEmail = async (req, res) => {
+    try {
+      const { token } = req.body ?? {};
 
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({
+          error: 'Debes proporcionar un token de verificación válido'
+        });
+      }
+
+      await this.authService.verifyEmail(token);
+
+      return res.status(200).json({
+        message: 'Correo electrónico verificado correctamente.'
+      });
+
+    } catch (error) {
+      if (
+        error.message === 'Token de verificación inválido' ||
+        error.message === 'El enlace de verificación no es válido o ha caducado' ||
+        error.message === 'No se pudo verificar el correo electrónico'
+      ) {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
+
+      console.error('Error verificando correo:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+    }
+  };
+  resendVerificationEmail = async (req, res) => {
+    try {
+      const { email } = req.body ?? {};
+
+      if (!email || typeof email !== 'string') {
+        return res.status(400).json({
+          error: 'Debes proporcionar un correo electrónico válido'
+        });
+      }
+
+      await this.authService.resendVerificationEmail(email);
+
+      return res.status(200).json({
+        message: 'Si existe una cuenta pendiente de verificación con ese correo, recibirás un nuevo enlace.'
+      });
+
+    } catch (error) {
+      if (error.message === 'Formato email incorrecto.') {
+        return res.status(400).json({
+          error: error.message
+        });
+      }
+
+      console.error('Error reenviando verificación:', error);
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
     }
   };
 
@@ -85,12 +190,29 @@ class AuthController {
       res.json({message: 'Login exitoso.', user: {email:user.email}});
 
     } catch (error) {
-      console.log(error);
-      if (error.message === "Contraseña incorrecta" || "Usuario no encontrado") {
+
+      if (error.message === 'Correo electrónico no verificado') {
+        return res.status(403).json({
+          error: 'Debes verificar tu correo electrónico antes de iniciar sesión'
+        });
+      }
+
+      if (
+        error.message === 'Contraseña incorrecta' ||
+        error.message === 'Usuario no encontrado'
+      ) {
         return res.status(400).json({
           error: 'Credenciales incorrectas'
         });
       }
+
+      if (error.message === 'Formato email incorrecto') {
+        return res.status(400).json({
+          error: 'Formato de correo electrónico incorrecto'
+        });
+      }
+
+      console.error('Error en login:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'

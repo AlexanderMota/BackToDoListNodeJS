@@ -4,29 +4,35 @@ class UserRepository {
   }
 
   async register(user) {
-    const [result] = await this.DBPool.query(`
+    await this.DBPool.query(`
       INSERT INTO users (
-        user_id, 
-        name, 
-        lastname, 
-        username, 
-        email, 
-        phone, 
-        password, 
-        role_id ) 
+        user_id,
+        name,
+        lastname,
+        username,
+        email,
+        phone,
+        password,
+        role_id
+      )
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `, [
-        user.user_id,
-        user.name,
-        user.lastname,
-        user.username,
-        user.email,
-        user.phone,
-        user.password,
-        5
-      ]
-    );
-    return user;
+    `, [
+      user.user_id,
+      user.name,
+      user.lastname,
+      user.username,
+      user.email,
+      user.phone,
+      user.password,
+      5
+    ]);
+
+    const { password, ...safeUser } = user;
+
+    return {
+      ...safeUser,
+      email_verified: false
+    };
   }
 
   async findByEmail(email) {
@@ -40,7 +46,8 @@ class UserRepository {
         password,
         phone, 
         avatar_url, 
-        role 
+        role ,
+        email_verified 
       FROM users 
       JOIN roles 
       ON users.role_id = roles.role_id 
@@ -180,6 +187,52 @@ class UserRepository {
     return result.affectedRows > 0;
 
 
+  }
+
+  /* conjunto de funciones para verificar un email por correo electronico */
+  async createVerificationToken(user_id, token_hash, expires_at) {
+    const [result] = await this.DBPool.query(`
+      INSERT INTO email_verification_tokens (
+        user_id,
+        token_hash,
+        expires_at
+      )
+      VALUES (?, ?, ?)
+    `, [user_id, token_hash, expires_at]);
+
+    return result.insertId;
+  }
+  async findValidVerificationToken(token_hash) {
+    const [rows] = await this.DBPool.query(`
+      SELECT
+        token_id,
+        user_id,
+        expires_at
+      FROM email_verification_tokens
+      WHERE token_hash = ?
+        AND expires_at > NOW()
+      LIMIT 1
+    `, [token_hash]);
+
+    return rows.length ? rows[0] : null;
+  }
+  async deleteVerificationToken(token_hash) {
+    const [result] = await this.DBPool.query(`
+      DELETE FROM email_verification_tokens
+      WHERE token_hash = ?
+    `, [token_hash]);
+
+    return result.affectedRows > 0;
+  }
+  async verifyUserEmail(user_id) {
+    const [result] = await this.DBPool.query(`
+      UPDATE users
+      SET email_verified = TRUE
+      WHERE user_id = ?
+        AND email_verified = FALSE
+    `, [user_id]);
+
+    return result.affectedRows > 0;
   }
 
   /* conjunto de funciones para recuperar cuenta tras olvidar la contraseña */

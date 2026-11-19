@@ -11,6 +11,7 @@ export default ({ AuthController }) => {
   router.post('/logout', (req, res) => AuthController.logout(req, res));
   router.post('/forgot-password', (req, res) => AuthController.forgotPassword(req, res));
   router.post('/reset-password', (req, res) => AuthController.resetPassword(req, res));
-
+  router.post('/verify-email', AuthController.verifyEmail);
+  router.post('/resend-verification', AuthController.resendVerificationEmail);
   return router;
 };
