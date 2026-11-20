@@ -72,22 +72,30 @@ class AuthController {
     }
   };
   verifyEmail = async (req, res) => {
+
     try {
       const { token } = req.body ?? {};
 
+      console.log('Método HTTP:', req.method);
+
       if (!token || typeof token !== 'string') {
         return res.status(400).json({
-          error: 'Debes proporcionar un token de verificación válido'
+          error: 'Debes proporcionar un token de verificación válido.'
         });
       }
 
       await this.authService.verifyEmail(token);
 
+      console.log('Verificación completada correctamente');
+
       return res.status(200).json({
-        message: 'Correo electrónico verificado correctamente.'
+        message: 'Correo electrónico verificado correctamente.',
+        user:{}
       });
 
     } catch (error) {
+      console.error('Error en verifyEmail:', error.message);
+
       if (
         error.message === 'Token de verificación inválido' ||
         error.message === 'El enlace de verificación no es válido o ha caducado' ||
@@ -98,8 +106,6 @@ class AuthController {
         });
       }
 
-      console.error('Error verificando correo:', error);
-
       return res.status(500).json({
         error: 'Error interno del servidor'
       });
@@ -108,6 +114,7 @@ class AuthController {
   resendVerificationEmail = async (req, res) => {
     try {
       const { email } = req.body ?? {};
+      console.log(req.body);
 
       if (!email || typeof email !== 'string') {
         return res.status(400).json({
@@ -118,7 +125,8 @@ class AuthController {
       await this.authService.resendVerificationEmail(email);
 
       return res.status(200).json({
-        message: 'Si existe una cuenta pendiente de verificación con ese correo, recibirás un nuevo enlace.'
+        message: 'Si existe una cuenta pendiente de verificación con ese correo, recibirás un nuevo enlace.',
+        user:{}
       });
 
     } catch (error) {
@@ -193,7 +201,7 @@ class AuthController {
 
       if (error.message === 'Correo electrónico no verificado') {
         return res.status(403).json({
-          error: 'Debes verificar tu correo electrónico antes de iniciar sesión'
+          error: 'Debes verificar tu correo electrónico antes de iniciar sesión.'
         });
       }
 
@@ -202,20 +210,20 @@ class AuthController {
         error.message === 'Usuario no encontrado'
       ) {
         return res.status(400).json({
-          error: 'Credenciales incorrectas'
+          error: 'Credenciales incorrectas.'
         });
       }
 
       if (error.message === 'Formato email incorrecto') {
         return res.status(400).json({
-          error: 'Formato de correo electrónico incorrecto'
+          error: 'Formato de correo electrónico incorrecto.'
         });
       }
 
-      console.error('Error en login:', error);
+      //console.error('Error en login:', error);
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -266,7 +274,7 @@ class AuthController {
         });
       }
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   };
@@ -276,19 +284,19 @@ class AuthController {
 
       if (!token || typeof token !== 'string') {
         return res.status(400).json({
-          error: 'El token de recuperación no es válido'
+          error: 'El token de recuperación no es válido.'
         });
       }
 
       if (!password || typeof password !== 'string') {
         return res.status(400).json({
-          error: 'Debes proporcionar una contraseña válida'
+          error: 'Debes proporcionar una contraseña válida.'
         });
       }
 
       if (password.length < 8) {
         return res.status(400).json({
-          error: 'La contraseña debe tener al menos 8 caracteres'
+          error: 'La contraseña debe tener al menos 8 caracteres.'
         });
       }
 
@@ -303,8 +311,8 @@ class AuthController {
       console.error('Error en resetPassword:', error);
 
       if (
-        error.message === 'El enlace de recuperación no es válido o ha caducado' ||
-        error.message === 'Token de recuperación inválido'
+        error.message === 'El enlace de recuperación no es válido o ha caducado.' ||
+        error.message === 'Token de recuperación inválido.'
       ) {
         return res.status(400).json({
           error: error.message
@@ -312,7 +320,7 @@ class AuthController {
       }
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   };

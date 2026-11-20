@@ -186,65 +186,65 @@ class ProfileController {
         });
     }
   };
-actualizarPassword = async (req, res) => {
-  try {
-    const user = req.user;
+  actualizarPassword = async (req, res) => {
+    try {
+      const user = req.user;
 
-    if (!user) {
-      return res.status(401).json({
-        error: 'Usuario no autenticado'
+      if (!user) {
+        return res.status(401).json({
+          error: 'Usuario no autenticado'
+        });
+      }
+
+      if (
+        !req.body?.password ||
+        typeof req.body.password.currentPassword !== 'string' ||
+        typeof req.body.password.newPassword !== 'string' ||
+        !req.body.password.currentPassword ||
+        !req.body.password.newPassword
+      ) {
+        return res.status(400).json({
+          error: 'Debes proporcionar la contraseña actual y la nueva'
+        });
+      }
+
+      const { currentPassword, newPassword } = req.body.password;
+
+      if (newPassword === currentPassword) {
+        return res.status(400).json({
+          error: 'La nueva contraseña es igual que la anterior'
+        });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({
+          error: 'La nueva contraseña debe tener al menos 6 caracteres'
+        });
+      }
+
+      await this.profileService.actualizarPassword(
+        user.user_id,
+        currentPassword,
+        newPassword
+      );
+
+      return res.status(200).json({
+        message: 'Contraseña actualizada correctamente.',
+        user: {}
+      });
+
+    } catch (error) {
+      if (error.message === 'Contraseña incorrecta') {
+        return res.status(400).json({
+          error: 'La contraseña actual es incorrecta'
+        });
+      }
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
       });
     }
-
-    if (
-      !req.body?.password ||
-      typeof req.body.password.currentPassword !== 'string' ||
-      typeof req.body.password.newPassword !== 'string' ||
-      !req.body.password.currentPassword ||
-      !req.body.password.newPassword
-    ) {
-      return res.status(400).json({
-        error: 'Debes proporcionar la contraseña actual y la nueva'
-      });
-    }
-
-    const { currentPassword, newPassword } = req.body.password;
-
-    if (newPassword === currentPassword) {
-      return res.status(400).json({
-        error: 'La nueva contraseña es igual que la anterior'
-      });
-    }
-
-    if (newPassword.length < 6) {
-      return res.status(400).json({
-        error: 'La nueva contraseña debe tener al menos 6 caracteres'
-      });
-    }
-
-    await this.profileService.actualizarPassword(
-      user.user_id,
-      currentPassword,
-      newPassword
-    );
-
-    return res.status(200).json({
-      message: 'Contraseña actualizada correctamente.',
-      user: {}
-    });
-
-  } catch (error) {
-    if (error.message === 'Contraseña incorrecta') {
-      return res.status(400).json({
-        error: 'La contraseña actual es incorrecta'
-      });
-    }
-
-    return res.status(500).json({
-      error: 'Error interno del servidor'
-    });
-  }
-};
+  };
   deleteFotoDePerfil = async (req, res) => {
     try {
       if (!req.user) {

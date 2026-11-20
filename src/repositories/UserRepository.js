@@ -221,7 +221,6 @@ class UserRepository {
       DELETE FROM email_verification_tokens
       WHERE token_hash = ?
     `, [token_hash]);
-
     return result.affectedRows > 0;
   }
   async verifyUserEmail(user_id) {
@@ -285,6 +284,15 @@ class UserRepository {
   async deleteUserTokens(user_id) {
     const [result] = await this.DBPool.query(`
       DELETE FROM password_reset_tokens
+      WHERE user_id = ?
+    `, [user_id]);
+
+    return result.affectedRows;
+  }
+
+  async deleteVerificationTokens(user_id) {
+    const [result] = await this.DBPool.query(`
+      DELETE FROM email_verification_tokens
       WHERE user_id = ?
     `, [user_id]);
 

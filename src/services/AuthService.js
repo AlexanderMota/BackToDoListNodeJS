@@ -23,7 +23,7 @@ class AuthService {
 
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    await this.userRepository.deleteVerificationToken(user.user_id);
+    await this.userRepository.deleteVerificationTokens(user.user_id);
 
     await this.userRepository.createVerificationToken(
       user.user_id,
@@ -49,11 +49,13 @@ class AuthService {
       throw new Error('Token de verificación inválido');
     }
 
+    console.log("verifyEmail.token >>> ", token);
     const tokenHash = crypto
       .createHash('sha256')
       .update(token)
       .digest('hex');
 
+    console.log("verifyEmail.tokenHash >>> ", tokenHash);
     const verification = await this.userRepository.findValidVerificationToken(
       tokenHash
     );
@@ -66,13 +68,13 @@ class AuthService {
       verification.user_id
     );
 
+    console.log("verified >>> ", verified);
+
     if (!verified) {
       throw new Error('No se pudo verificar el correo electrónico');
     }
 
-    await this.userRepository.deleteVerificationToken(
-      verification.user_id
-    );
+    await this.userRepository.deleteVerificationToken(tokenHash);
   }
   async resendVerificationEmail(email) {
     const valid = await this.userValidations.validateEmail(email);

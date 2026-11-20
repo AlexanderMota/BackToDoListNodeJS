@@ -18,9 +18,6 @@ import { AuthService, ProfileService, TaskService, CommentsService, Collaborator
 // repositorios
 import { UserRepository, TaskRepository, CommentsRepository, CollaboratorsRepository } from './repositories/index.js';
 
-// modelos
-//import {User, Tarea} from './models/index.js';
-
 // validaciones
 import { UserValidations } from './validations/index.js';
 
