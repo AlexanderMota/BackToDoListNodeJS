@@ -4,7 +4,6 @@ import { Router } from 'express';
 export default ({ TaskController, CommentsController }) => {
   const router = Router();
 
-  //router.get('/all', authMiddleware, (req, res) => TaskController.getAllTasks(req, res));
   router.get('/principales', authMiddleware, (req, res) => TaskController.getParentTasks(req, res));
   router.get('/derivadas/:id', authMiddleware, (req, res) => TaskController.getSubTasks(req, res));
   router.get('/colaborando', authMiddleware, (req, res) => TaskController.getTasksByCollaborating(req, res));

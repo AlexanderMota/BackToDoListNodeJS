@@ -15,6 +15,7 @@ describe('AuthService', () => {
     let service;
     let mockUserRepository;
     let mockUserValidations;
+    //let mockMailService;
 
 
     beforeEach(() => {
@@ -28,9 +29,13 @@ describe('AuthService', () => {
             validateEmail: jest.fn()
         };
 
+        /*mockMailService = {
+        };*/
+
         service = new AuthService({
             UserRepository: mockUserRepository,
             UserValidations: mockUserValidations
+            //MailService: mockMailService
         });
 
     });
@@ -99,7 +104,8 @@ describe('AuthService', () => {
                 user_id:'123',
                 email:email, 
                 password:hashedPassword,
-                role:'user'
+                role:'user',
+                email_verified:true
             });
 
             mockJwtSign.mockReturnValue('token');

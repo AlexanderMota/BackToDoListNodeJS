@@ -23,7 +23,8 @@ describe('API - Profile', () => {
     username: `profile_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     email: `profile.${randomUUID()}@example.com`,
     phone: '600123456',
-    password: 'TestPassword123!'
+    password: 'TestPassword123!',
+    email_verified: true
   };
 
   const secondaryUser = {
@@ -33,7 +34,8 @@ describe('API - Profile', () => {
     username: `secondary_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     email: `secondary.${randomUUID()}@example.com`,
     phone: null,
-    password: 'TestPassword123!'
+    password: 'TestPassword123!',
+    email_verified: true
   };
 
   const newPassword = 'NewTestPassword456!';
@@ -67,8 +69,8 @@ describe('API - Profile', () => {
 
     await DBPool.query(
       `INSERT INTO users (
-        user_id, name, lastname, username, email, phone, password, role_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        user_id, name, lastname, username, email, phone, password, email_verified, role_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.user_id,
         user.name,
@@ -77,6 +79,7 @@ describe('API - Profile', () => {
         user.email,
         user.phone,
         hashedPassword,
+        user.email_verified,
         5
       ]
     );
@@ -303,7 +306,7 @@ test('Encuentra otros usuarios por nombre de usuario', async () => {
 
       expect(response.status).toBe(400);
       expect(response.body).toEqual({
-        error: 'Contraseña incorrecta'
+        error: 'La contraseña actual es incorrecta'
       });
     });
 
@@ -335,7 +338,7 @@ test('Encuentra otros usuarios por nombre de usuario', async () => {
 
       expect(response.status).toBe(200);
 
-      expect(response.body.message).toBe('Perfil actualizado.');
+      expect(response.body.message).toBe('Contraseña actualizada correctamente.');
 
       const [rows] = await DBPool.query(
         'SELECT password FROM users WHERE user_id = ?',

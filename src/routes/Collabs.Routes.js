@@ -1,5 +1,4 @@
 import { authMiddleware } from '../middlewares/AuthMiddleware.js';
-import { uploadAvatar } from '../middlewares/UploadAvatar.js';
 import { Router } from 'express';
 
 export default ({ CollaboratorsController }) => {

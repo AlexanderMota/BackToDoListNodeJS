@@ -21,8 +21,6 @@ class AuthController {
 
       const newUser = await this.perfilService.createProfile(user);
 
-      // El usuario ya está registrado.
-      // El envío del correo se gestiona por separado.
       let emailSent = false;
 
       try {
@@ -42,7 +40,7 @@ class AuthController {
 
     } catch (error) {
       
-      console.error('Error creando perfil:', error);
+      //console.error('Error creando perfil:', error);
       if (error.sqlMessage === 'Column \'username\' cannot be null') {
         return res.status(400).json({
           error: 'Debe indicar un nick para la cuenta.'
@@ -76,8 +74,6 @@ class AuthController {
     try {
       const { token } = req.body ?? {};
 
-      console.log('Método HTTP:', req.method);
-
       if (!token || typeof token !== 'string') {
         return res.status(400).json({
           error: 'Debes proporcionar un token de verificación válido.'
@@ -86,15 +82,12 @@ class AuthController {
 
       await this.authService.verifyEmail(token);
 
-      console.log('Verificación completada correctamente');
-
       return res.status(200).json({
         message: 'Correo electrónico verificado correctamente.',
         user:{}
       });
 
     } catch (error) {
-      console.error('Error en verifyEmail:', error.message);
 
       if (
         error.message === 'Token de verificación inválido' ||
@@ -114,7 +107,6 @@ class AuthController {
   resendVerificationEmail = async (req, res) => {
     try {
       const { email } = req.body ?? {};
-      console.log(req.body);
 
       if (!email || typeof email !== 'string') {
         return res.status(400).json({
@@ -135,8 +127,7 @@ class AuthController {
           error: error.message
         });
       }
-
-      console.error('Error reenviando verificación:', error);
+      //console.error('Error reenviando verificación:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -164,7 +155,6 @@ class AuthController {
         role: user.role }});
     } catch (error) {
 
-      //console.error('Error en createTarea:', error);
       if (error.message === "Usuario no encontrado") {
         return res.status(404).json({
           error: 'Usuario no encontrado'
@@ -209,7 +199,7 @@ class AuthController {
         error.message === 'Contraseña incorrecta' ||
         error.message === 'Usuario no encontrado'
       ) {
-        return res.status(400).json({
+        return res.status(401).json({
           error: 'Credenciales incorrectas.'
         });
       }
@@ -219,8 +209,6 @@ class AuthController {
           error: 'Formato de correo electrónico incorrecto.'
         });
       }
-
-      //console.error('Error en login:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor.'
@@ -251,7 +239,6 @@ class AuthController {
   forgotPassword = async (req, res) => {
     try {
       const { email } = req.body ?? {};
-      //console.log('Email recibido en forgotPassword:', email);
 
       if (!email || typeof email !== 'string') {
         return res.status(400).json({
@@ -267,7 +254,6 @@ class AuthController {
       });
 
     } catch (error) {
-      //console.error('Error en forgotPassword:', error);
       if (error.message === 'Debes proporcionar un correo electrónico válido.' || 'Formato email incorrecto.') {
         return res.status(400).json({
           error: error.message

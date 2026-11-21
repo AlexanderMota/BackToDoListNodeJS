@@ -20,7 +20,7 @@ class ProfileService {
     user.user_id = randomUUID();
     user.password = await bcrypt.hash(user.password, 10);
 
-    return await this.userRepository.register(user);
+    return await this.userRepository.createProfile(user);
   }
   async getUserById(user_id) {
     const user = await this.userRepository.findById(user_id);

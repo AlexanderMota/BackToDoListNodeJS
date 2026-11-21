@@ -158,27 +158,14 @@ class CollaboratorsRepository {
       }
     }
 
-    /*try {
-      await this.DBPool.beginTransaction();
-*/
-      await this.DBPool.query(`
-        DELETE FROM user_tasks 
-        WHERE user_id = ? AND task_id = ?`, [rows0[0].user_id,rows0[0].task_id]);
+    await this.DBPool.query(`
+      DELETE FROM user_tasks 
+      WHERE user_id = ? AND task_id = ?`, [rows0[0].user_id,rows0[0].task_id]);
 
-
-      await this.DBPool.query(`
-        DELETE FROM requests_task 
-        WHERE request_id = ?
-      `, [request_id]);
-/*
-      await this.DBPool.commit();
-
-    } catch (err) {
-        await this.DBPool.rollback();
-        throw err;
-    } finally {
-        this.DBPool.release();
-    }*/
+    await this.DBPool.query(`
+      DELETE FROM requests_task 
+      WHERE request_id = ?
+    `, [request_id]);
 
     return true;
   }

@@ -430,9 +430,9 @@ describe('ProfileController', () => {
 
             const response = res.json.mock.calls[0][0];
 
-            expect(response.message).toBe('Perfil actualizado.');
+            expect(response.message).toBe('Contraseña actualizada correctamente.');
 
-            expect(response.user).toEqual(req.user);
+            expect(response.user).toEqual({});
 
             // Comprobamos la BD
             const [rows] = await DBPool.query(

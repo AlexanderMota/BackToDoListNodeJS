@@ -19,7 +19,8 @@ describe('API - Autenticación', () => {
     username: `api_test_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     email: `api.test.${randomUUID()}@example.com`,
     phone: null,
-    password: 'TestPassword123!'
+    password: 'TestPassword123!',
+    email_verified: true
   };
   
   beforeAll(async () => {
@@ -27,8 +28,8 @@ describe('API - Autenticación', () => {
 
     await DBPool.query(
       `INSERT INTO users (
-        user_id, name, lastname, username, email, phone, password, role_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        user_id, name, lastname, username, email, phone, password, email_verified, role_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         testUser.user_id,
         testUser.name,
@@ -37,6 +38,7 @@ describe('API - Autenticación', () => {
         testUser.email,
         testUser.phone,
         hashedPassword,
+        true,
         5
       ]
     );
@@ -110,7 +112,7 @@ describe('API - Autenticación', () => {
       });
     });
 
-    test('Con usuario inexistente devuelve 500', async () => {
+    test('Con usuario inexistente devuelve 401', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -120,11 +122,11 @@ describe('API - Autenticación', () => {
           }
         });
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(401);
       expect(response.body).toHaveProperty('error');
     });
 
-    test('Con contraseña incorrecta devuelve 401', async () => {
+    test('Con contraseña incorrecta devuelve 400', async () => {
       const response = await request(app)
         .post('/auth/login')
         .send({
@@ -136,7 +138,7 @@ describe('API - Autenticación', () => {
 
       expect(response.status).toBe(401);
       expect(response.body).toEqual({
-        error: 'Credenciales incorrectas'
+        error: 'Credenciales incorrectas.'
       });
     });
 
@@ -197,8 +199,7 @@ describe('API - Autenticación', () => {
 
       expect(accessTokenCookie).toBeDefined();
       expect(accessTokenCookie).toMatch(/access_token=;/);
-  });
-
+    });
   });
 
   describe('Flujo completo de autenticación', () => {

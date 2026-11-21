@@ -68,10 +68,6 @@ container.register({
   CollaboratorsRepository: asClass(CollaboratorsRepository).singleton()
 });
 
-// Registrar Modelos
-/*container.register({
-  User: asValue(User)
-});*/
 
 // Registrar Validaciones
 container.register({

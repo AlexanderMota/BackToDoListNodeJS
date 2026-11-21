@@ -13,7 +13,8 @@ describe('AuthController', () => {
 
         mockAuthService = {
             getMe: jest.fn(),
-            login: jest.fn()
+            login: jest.fn(),
+            sendVerificationEmail: jest.fn()
         };
         mockPerfilService = {
             createProfile: jest.fn()
@@ -42,7 +43,7 @@ describe('AuthController', () => {
 
     describe('createProfile', () => {
 
-        test('Debe crear el perfil y devolver status 201 con el usuario creado', async () => {
+        test('Debe crear el perfil, enviar el email de verificación y devolver status 201', async () => {
 
             const user = { 
                 name: 'Alexander', 
@@ -51,12 +52,13 @@ describe('AuthController', () => {
                 email: 'alex@test.com', 
                 password: 'contraseña123' 
             }; 
-            const newUser = '123'; 
+            const newUser = {user_id:'123'}; 
 
             mockRequest.body = { user }; 
             mockPerfilService.createProfile.mockResolvedValue(newUser); 
 
             await controller.createProfile( mockRequest, mockResponse );
+            await mockAuthService.sendVerificationEmail(newUser);
 
             expect(mockPerfilService.createProfile).toHaveBeenCalledTimes(1); 
             expect(mockPerfilService.createProfile).toHaveBeenCalledWith(user); 
@@ -64,7 +66,9 @@ describe('AuthController', () => {
             expect(mockResponse.status).toHaveBeenCalledWith(201); 
             expect(mockResponse.json).toHaveBeenCalledTimes(1); 
             expect(mockResponse.json).toHaveBeenCalledWith({ 
-                message: 'Perfil creado.', 
+                
+                emailSent: true,
+                message: "Perfil creado. Revisa tu correo electrónico para verificar tu cuenta.",
                 user: newUser 
             });
 
@@ -237,7 +241,7 @@ describe('AuthController', () => {
             expect(mockAuthService.login).toHaveBeenCalledWith( user.email, user.password ); 
             expect(mockResponse.status).toHaveBeenCalledWith(500); 
             expect(mockResponse.json).toHaveBeenCalledWith(
-                { error: 'Error interno del servidor' }
+                { error: 'Error interno del servidor.' }
             ); 
         });
     });

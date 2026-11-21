@@ -44,38 +44,6 @@ class AuthService {
       throw error;
     }
   }
-  async verifyEmail(token) {
-    if (!token || typeof token !== 'string') {
-      throw new Error('Token de verificación inválido');
-    }
-
-    console.log("verifyEmail.token >>> ", token);
-    const tokenHash = crypto
-      .createHash('sha256')
-      .update(token)
-      .digest('hex');
-
-    console.log("verifyEmail.tokenHash >>> ", tokenHash);
-    const verification = await this.userRepository.findValidVerificationToken(
-      tokenHash
-    );
-
-    if (!verification) {
-      throw new Error('El enlace de verificación no es válido o ha caducado');
-    }
-
-    const verified = await this.userRepository.verifyUserEmail(
-      verification.user_id
-    );
-
-    console.log("verified >>> ", verified);
-
-    if (!verified) {
-      throw new Error('No se pudo verificar el correo electrónico');
-    }
-
-    await this.userRepository.deleteVerificationToken(tokenHash);
-  }
   async resendVerificationEmail(email) {
     const valid = await this.userValidations.validateEmail(email);
 
@@ -92,6 +60,35 @@ class AuthService {
 
     await this.sendVerificationEmail(user);
   }
+  async verifyEmail(token) {
+    if (!token || typeof token !== 'string') {
+      throw new Error('Token de verificación inválido');
+    }
+
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const verification = await this.userRepository.findValidVerificationToken(
+      tokenHash
+    );
+
+    if (!verification) {
+      throw new Error('El enlace de verificación no es válido o ha caducado');
+    }
+
+    const verified = await this.userRepository.verifyUserEmail(
+      verification.user_id
+    );
+
+    if (!verified) {
+      throw new Error('No se pudo verificar el correo electrónico');
+    }
+
+    await this.userRepository.deleteVerificationToken(tokenHash);
+  }
+  
   async getMe(id) {
     const user = await this.userRepository.findById(id);
     if (!user) throw new Error('Usuario no encontrado');

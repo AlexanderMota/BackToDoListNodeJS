@@ -3,7 +3,7 @@ class UserRepository {
     this.DBPool = DBPool;
   }
 
-  async register(user) {
+  async createProfile(user) {
     await this.DBPool.query(`
       INSERT INTO users (
         user_id,

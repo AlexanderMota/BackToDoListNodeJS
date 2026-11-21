@@ -17,17 +17,19 @@ describe('AuthController', () => {
         controller = new AuthController({
             AuthService: new AuthService({
                 UserRepository:new UserRepository({ DBPool }),
-                UserValidations: new UserValidations()
+                UserValidations
             }),
             ProfileService: new ProfileService({ 
-                UserRepository: new UserRepository({ DBPool }) 
+                UserRepository: new UserRepository({ DBPool }) ,
+                UserValidations
             })
         });
-
     });
-    
+        
     describe('createProfile', () => {
+
         test('Debe crear un nuevo usuario correctamente', async () => {
+
             const user = {
                 name: 'Auth',
                 lastname: 'Controller',
@@ -37,6 +39,7 @@ describe('AuthController', () => {
                 password: 'password123'
             };
 
+            // Eliminar registros anteriores del mismo usuario
             await DBPool.query(
                 `
                 DELETE FROM users
@@ -58,57 +61,92 @@ describe('AuthController', () => {
 
             const originalPassword = user.password;
 
-            await controller.createProfile(req, res);
+            // Simular únicamente el envío del correo
+            const emailSpy = jest.spyOn(
+                controller.authService,
+                'sendVerificationEmail'
+            ).mockResolvedValue(true);
 
-            expect(res.status).toHaveBeenCalledWith(201);
-            expect(res.json).toHaveBeenCalledTimes(1);
+            try {
 
-            const response = res.json.mock.calls[0][0];
+                await controller.createProfile(req, res);
 
-            expect(response.message).toBe('Perfil creado.');
-            expect(response.user).toBeDefined();
+                expect(res.status).toHaveBeenCalledWith(201);
+                expect(res.json).toHaveBeenCalledTimes(1);
 
-            const [rows] = await DBPool.query(
-                `
-                SELECT
-                    user_id,
-                    name,
-                    lastname,
-                    username,
-                    email,
-                    phone,
-                    password,
-                    role_id
-                FROM users
-                WHERE username = ?
-                `,
-                [user.username]
-            );
+                const response = res.json.mock.calls[0][0];
 
-            expect(rows).toHaveLength(1);
+                expect(response.message).toBe(
+                    'Perfil creado. Revisa tu correo electrónico para verificar tu cuenta.'
+                );
 
-            const createdUser = rows[0];
+                expect(response.emailSent).toBe(true);
+                expect(response.user).toBeDefined();
 
-            expect(createdUser.name).toBe(user.name);
-            expect(createdUser.lastname).toBe(user.lastname);
-            expect(createdUser.username).toBe(user.username);
-            expect(createdUser.email).toBe(user.email);
-            expect(createdUser.phone).toBe(user.phone);
-            expect(createdUser.role_id).toBe(5);
+                // Comprobar que se solicitó el envío del correo
+                expect(emailSpy).toHaveBeenCalledTimes(1);
 
-            expect(createdUser.password).not.toBe(originalPassword);
+                expect(emailSpy).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        email: user.email,
+                        username: user.username
+                    })
+                );
 
-            const passwordMatches = await bcrypt.compare(
-                originalPassword,
-                createdUser.password
-            );
+                // Comprobar el registro real en MySQL
+                const [rows] = await DBPool.query(
+                    `
+                    SELECT
+                        user_id,
+                        name,
+                        lastname,
+                        username,
+                        email,
+                        phone,
+                        password,
+                        role_id,
+                        email_verified
+                    FROM users
+                    WHERE username = ?
+                    `,
+                    [user.username]
+                );
 
-            expect(passwordMatches).toBe(true);
+                expect(rows).toHaveLength(1);
 
-            await DBPool.query(
-                'DELETE FROM users WHERE user_id = ?',
-                [createdUser.user_id]
-            );
+                const createdUser = rows[0];
+
+                expect(createdUser.name).toBe(user.name);
+                expect(createdUser.lastname).toBe(user.lastname);
+                expect(createdUser.username).toBe(user.username);
+                expect(createdUser.email).toBe(user.email);
+                expect(createdUser.phone).toBe(user.phone);
+                expect(createdUser.role_id).toBe(5);
+
+                // El correo debe estar pendiente de verificación
+                expect(createdUser.email_verified).toBe(0);
+
+                // La contraseña no debe almacenarse en texto plano
+                expect(createdUser.password).not.toBe(originalPassword);
+
+                const passwordMatches = await bcrypt.compare(
+                    originalPassword,
+                    createdUser.password
+                );
+
+                expect(passwordMatches).toBe(true);
+
+            } finally {
+
+                // Restaurar el método original
+                emailSpy.mockRestore();
+
+                // Limpiar los datos creados durante el test
+                await DBPool.query(
+                    'DELETE FROM users WHERE username = ?',
+                    [user.username]
+                );
+            }
         });
     });
     afterAll(async () => {

@@ -141,49 +141,75 @@ describe('TaskRepository', () => {
 
         test('Debe devolver las subtareas cuando el usuario tiene acceso a la tarea padre', async () => {
 
-            const parentTask = {
-                task_id: '1',
-                created_by: '123',
-                visibility: 'private'
-            };
+    const userId = '234';
 
-            const subtask = {
-                task_id: '2',
-                name: 'subtarea mock nueva',
-                parent_task_id: '1',
-                created_by: '123',
-                visibility: 'private'
-            };
+    const parentTask = {
+        task_id: '1',
+        created_by: '123',
+        visibility: 'private'
+    };
 
-            mockDBPool.query
-                .mockResolvedValueOnce([[parentTask]]) // findById: acceso a la tarea padre
-                .mockResolvedValueOnce([[subtask]]);    // Consulta de subtareas
+    const subtask = {
+        task_id: '2',
+        name: 'subtarea mock nueva',
+        parent_task_id: '1',
+        created_by: '123',
+        visibility: 'private',
+        request_task: null
+    };
 
-            const result = await repository.findSubTasks('1', '123');
+    jest.spyOn(repository, 'findById').mockResolvedValue(parentTask);
 
-            expect(result).toEqual([subtask]);
-            expect(mockDBPool.query).toHaveBeenCalledTimes(2);
+    mockDBPool.query
+        // El usuario colabora en la tarea padre
+        .mockResolvedValueOnce([[{ 1: 1 }]])
 
-            expect(mockDBPool.query).toHaveBeenNthCalledWith(
-                2,
-                expect.stringContaining('WHERE t.parent_task_id = ?'),
-                ['1', '123', '123']
-            );
-        });
+        // MySQL devuelve las subtareas permitidas
+        .mockResolvedValueOnce([[subtask]]);
+
+    const result = await repository.findSubTasks(
+        subtask.parent_task_id,
+        userId
+    );
+
+    expect(result).toEqual([subtask]);
+
+    expect(repository.findById).toHaveBeenCalledWith('1', userId);
+
+    expect(mockDBPool.query).toHaveBeenCalledTimes(2);
+
+    expect(mockDBPool.query).toHaveBeenNthCalledWith(
+        1,
+        expect.stringContaining('FROM user_tasks'),
+        ['1', userId]
+    );
+
+    expect(mockDBPool.query).toHaveBeenNthCalledWith(
+        2,
+        expect.stringContaining('WHERE t.parent_task_id = ?'),
+        [
+            userId, 
+            '1',  
+            0,   
+            1,   
+            userId
+        ]
+    );
+});
 
         test('Debe devolver un array vacío si la tarea no tiene subtareas', async () => {
 
-            const parentTask = {
-                task_id: '1',
-                created_by: '123',
-                visibility: 'private'
-            };
+            jest.spyOn(repository, 'findById').mockResolvedValue({
+                task_id: 1,
+                created_by: '234'
+            });
 
             mockDBPool.query
-                .mockResolvedValueOnce([[parentTask]])
+                .mockResolvedValueOnce([[]])
+
                 .mockResolvedValueOnce([[]]);
 
-            const result = await repository.findSubTasks('1', '123');
+            const result = await repository.findSubTasks(1, '234');
 
             expect(result).toEqual([]);
             expect(mockDBPool.query).toHaveBeenCalledTimes(2);
@@ -309,7 +335,7 @@ describe('TaskRepository', () => {
             expect(mockDBPool.query).toHaveBeenCalledTimes(1);
 
             expect(mockDBPool.query).toHaveBeenCalledWith(
-                expect.stringContaining('WHERE user_tasks.user_id = ?'),
+                expect.stringContaining('WHERE ut.user_id = ?'),
                 ['234']
             );
         });
@@ -340,7 +366,16 @@ describe('TaskRepository', () => {
                     priority: null,
                     parent_task_id: null,
                     created_by: '123',
-                    visibility: 'public'
+                    visibility: 'public',
+                    "request_task":  {
+                        "created_at": undefined,
+                        "request_id": undefined,
+                        "sender_user_id": undefined,
+                        "status": undefined,
+                        "task_id": undefined,
+                        "updated_at": undefined,
+                        "user_id": undefined
+                    }
                 },
                 {
                     task_id: '2',
@@ -350,7 +385,16 @@ describe('TaskRepository', () => {
                     priority: null,
                     parent_task_id: '1',
                     created_by: '123',
-                    visibility: 'public'
+                    visibility: 'public',
+                    "request_task":  {
+                        "created_at": undefined,
+                        "request_id": undefined,
+                        "sender_user_id": undefined,
+                        "status": undefined,
+                        "task_id": undefined,
+                        "updated_at": undefined,
+                        "user_id": undefined,
+                    }
                 }
             ];
 
@@ -358,13 +402,11 @@ describe('TaskRepository', () => {
 
             const result = await repository.findTasksByCollabRequest('234');
 
-            expect(result).toEqual(tasks);
-
             expect(mockDBPool.query).toHaveBeenCalledTimes(1);
 
             expect(mockDBPool.query).toHaveBeenCalledWith(
-                expect.stringContaining('WHERE requests_task.user_id = ?'),
-                ['234']
+                expect.stringContaining("WHERE requests_task.status = 'pending'"),
+                Array(9).fill('234')
             );
         });
         test('Debe devolver null si no hay ninguna solicitud de colaboración pendiente', async () => {

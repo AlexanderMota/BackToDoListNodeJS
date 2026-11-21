@@ -245,8 +245,6 @@ describe('ProfileController', () => {
                 newPassword: 'newPassword123', 
                 currentPassword: 'currentPassword123'
             };
-
-            mockPerfilService.actualizarPassword.mockResolvedValue(true);
             
             await controller.actualizarPassword(mockRequest, mockResponse);
             
@@ -258,30 +256,36 @@ describe('ProfileController', () => {
             expect(mockPerfilService.actualizarPassword).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                message: 'Perfil actualizado.', user: mockRequest.user
+                message: 'Contraseña actualizada correctamente.', user: {}
             });
         });
-        test('Debe devolver 400 si la contraseña no se puede actualizar', async () => {
-            
+        test('Debe devolver 400 si la contraseña actual es incorrecta', async () => {
+
             mockRequest.body.password = {
-                newPassword: 'newPassword123', 
+                newPassword: 'newPassword123',
                 currentPassword: 'currentPassword123'
             };
 
-            mockPerfilService.actualizarPassword.mockResolvedValue(false);
-            
+            mockPerfilService.actualizarPassword.mockRejectedValue(
+                new Error('Contraseña incorrecta')
+            );
+
             await controller.actualizarPassword(mockRequest, mockResponse);
-            
+
             expect(mockPerfilService.actualizarPassword).toHaveBeenCalledWith(
                 mockRequest.user.user_id,
-                mockRequest.body.password.currentPassword, 
+                mockRequest.body.password.currentPassword,
                 mockRequest.body.password.newPassword
             );
+
             expect(mockPerfilService.actualizarPassword).toHaveBeenCalledTimes(1);
+
             expect(mockResponse.json).toHaveBeenCalledTimes(1);
+
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tuvimos un problema al intentar actualizar la contraseña. Verifica que la contraseña actual sea correcta'
+                error: 'La contraseña actual es incorrecta'
             });
+
             expect(mockResponse.status).toHaveBeenCalledTimes(1);
             expect(mockResponse.status).toHaveBeenCalledWith(400);
         });

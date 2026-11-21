@@ -23,7 +23,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('register');
 
-            const result = await userRepository.register(user);
+            const result = await userRepository.createProfile(user);
 
             expect(result).toBeDefined();
 
@@ -51,7 +51,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('find-email');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const result = await userRepository.findByEmail(user.email);
 
@@ -87,7 +87,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('find-id');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const result = await userRepository.findById(user.user_id);
 
@@ -123,7 +123,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('avatar');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const avatarUrl = 'avatars/test-avatar.jpg';
 
@@ -161,7 +161,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('profile');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const profile = {
                 name: 'Nombre Actualizado',
@@ -214,7 +214,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('password');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const result = await userRepository.updatePassword(
                 user.user_id,
@@ -236,7 +236,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('wrong-password');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const result = await userRepository.updatePassword(
                 user.user_id,
@@ -274,7 +274,7 @@ describe('UserRepository', () => {
 
             const user = createTestUser('delete');
 
-            await userRepository.register(user);
+            await userRepository.createProfile(user);
 
             const result = await userRepository.delete(user.user_id);
 

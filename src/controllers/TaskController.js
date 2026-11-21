@@ -75,7 +75,6 @@ class TaskController {
       
       res.json({ message: 'Tareas encontradas.', tasks });
     } catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -117,7 +116,6 @@ class TaskController {
       res.json({ message: 'Tareas encontradas.', tasks });
 
     }catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -136,7 +134,6 @@ class TaskController {
 
 
     }catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -154,7 +151,6 @@ class TaskController {
 
       res.json({ message: 'Tareas encontradas.', tasks });
     } catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -213,7 +209,6 @@ class TaskController {
       const priorities = await this.tareasService.getPriorities();
       res.json({ message: 'Prioridades encontradas.', priorities });
     } catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -228,7 +223,6 @@ class TaskController {
       const status = await this.tareasService.getStatus();
       res.json({ message: 'Status encontrados.', status });
     } catch (error) {
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'
@@ -291,8 +285,6 @@ class TaskController {
       res.json({ message: 'Tarea eliminada exitosamente.', task: tareaEliminada });
 
     } catch (error) {
-
-      //console.error('Error en createTarea:', error);
 
       return res.status(500).json({
         error: 'Error interno del servidor'

@@ -732,7 +732,7 @@ describe('TaskRepository', () => {
 
     describe('findById', () => {
 
-        test('debería devolver una tarea al usuario propietario', async () => {
+        test('Debe devolver una tarea al usuario propietario', async () => {
 
             const user = createTestUser('find-owner');
 
@@ -771,7 +771,7 @@ describe('TaskRepository', () => {
         });
 
 
-        test('debería permitir acceder a una tarea siendo colaborador', async () => {
+        test('Debe permitir acceder a una tarea siendo colaborador', async () => {
 
             const owner = createTestUser('find-collab-owner');
             const collaborator = createTestUser('find-collab-user');
@@ -817,7 +817,7 @@ describe('TaskRepository', () => {
         });
 
 
-        test('debería permitir acceder a una tarea con solicitud pendiente', async () => {
+        test('Debe impedir acceder a una tarea con solicitud pendiente', async () => {
 
             const owner = createTestUser('find-pending-owner');
             const requester = createTestUser('find-pending-user');
@@ -844,13 +844,14 @@ describe('TaskRepository', () => {
                 requester.user_id
             ]);
 
-            const result =
-                await taskRepository.findById(
+            await expect(
+                taskRepository.findById(
                     task.task_id,
                     requester.user_id
-                );
-
-            expect(result.task_id).toBe(task.task_id);
+                )
+            ).rejects.toThrow(
+                'No tienes permiso para acceder a esta tarea'
+            );
 
             await taskRepository.delete(
                 task.task_id,
@@ -864,7 +865,7 @@ describe('TaskRepository', () => {
         });
 
 
-        test('debería permitir acceder a una tarea pública', async () => {
+        test('Debe permitir acceder a una tarea pública', async () => {
 
             const owner = createTestUser('find-public-owner');
             const viewer = createTestUser('find-public-viewer');
@@ -903,7 +904,7 @@ describe('TaskRepository', () => {
         });
 
 
-        test('debería rechazar el acceso de un usuario sin permisos', async () => {
+        test('Debe rechazar el acceso de un usuario sin permisos', async () => {
 
             const owner = createTestUser('find-denied-owner');
             const otherUser = createTestUser('find-denied-user');

@@ -20,7 +20,8 @@ describe('API - Tasks', () => {
     username: `task_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     email: `task.${randomUUID()}@example.com`,
     phone: null,
-    password: 'TestPassword123!'
+    password: 'TestPassword123!',
+    email_verified: true
   };
 
   const secondaryUser = {
@@ -30,7 +31,8 @@ describe('API - Tasks', () => {
     username: `secondary_${randomUUID().replaceAll('-', '').slice(0, 12)}`,
     email: `secondary.${randomUUID()}@example.com`,
     phone: null,
-    password: 'TestPassword123!'
+    password: 'TestPassword123!',
+    email_verified: true
   };
 
   let agent;
@@ -48,8 +50,8 @@ describe('API - Tasks', () => {
 
     await DBPool.query(
       `INSERT INTO users (
-        user_id, name, lastname, username, email, phone, password, role_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        user_id, name, lastname, username, email, phone, password, email_verified, role_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         user.user_id,
         user.name,
@@ -58,6 +60,7 @@ describe('API - Tasks', () => {
         user.email,
         user.phone,
         hashedPassword,
+        user.email_verified,
         5
       ]
     );
@@ -414,11 +417,11 @@ describe('API - Tasks', () => {
       expect(response.body.task.task_id).toBe(collaboratingTaskId);
     });
 
-    test('Permite consultar una tarea con invitación pendiente', async () => {
+    test('Impide consultar una tarea con invitación pendiente', async () => {
       const response = await agent
         .get(`/tareas/tarea/${invitationTaskId}`);
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(403);
 
       expect(response.body.task.task_id).toBe(invitationTaskId);
     });

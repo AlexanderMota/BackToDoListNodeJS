@@ -30,14 +30,15 @@ describe('UserRepository', () => {
         username: 'alexnick',
         email: 'alex@test.com',
         phone: null,
-        password: 'password123'
+        password: 'password123',
+        email_verified: false
     };
-
+    const { password, ...safeUser } = newUser;
     mockDBPool.query.mockResolvedValue([{}]);
 
-    const result = await repository.register(newUser);
+    const result = await repository.createProfile(newUser);
 
-    expect(result).toBe(newUser);
+    expect(result).toStrictEqual(safeUser);
 
     expect(mockDBPool.query).toHaveBeenCalledTimes(1);
 
@@ -67,7 +68,7 @@ describe('UserRepository', () => {
             mockDBPool.query.mockRejectedValue(error);
 
             await expect(
-                repository.register(newUser)
+                repository.createProfile(newUser)
             ).rejects.toThrow('Error de base de datos');
         });
     })

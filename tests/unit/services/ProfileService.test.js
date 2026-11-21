@@ -24,11 +24,12 @@ describe('ProfileService', () => {
     
     let service; 
     let mockUserRepository; 
+    let mockUserValidations; 
     
     beforeEach(() => { 
         
         mockUserRepository = { 
-            register: jest.fn(), 
+            createProfile: jest.fn(), 
             findById: jest.fn(), 
             searchUsers: jest.fn(),
             updateAvatar: jest.fn(),
@@ -36,9 +37,13 @@ describe('ProfileService', () => {
             updatePassword: jest.fn(),
             delete: jest.fn()
         }; 
+        mockUserValidations = {
+            validateEmail: jest.fn()
+        }
         
         service = new ProfileService({ 
-            UserRepository: mockUserRepository 
+            UserRepository: mockUserRepository ,
+            UserValidations: mockUserValidations
         }); 
         
         jest.clearAllMocks(); 
@@ -57,15 +62,16 @@ describe('ProfileService', () => {
             }; 
             const hashedPassword = 'password_hasheada'; 
             
+            mockUserValidations.validateEmail.mockResolvedValue(true);
             mockBcryptHash.mockResolvedValue(hashedPassword); 
-            mockUserRepository.register.mockResolvedValue(user); 
+            mockUserRepository.createProfile.mockResolvedValue(user); 
             
             const result = await service.createProfile(user); 
             
             expect(mockBcryptHash).toHaveBeenCalledTimes(1); 
             expect(mockBcryptHash).toHaveBeenCalledWith('contraseña123', 10); 
-            expect(mockUserRepository.register).toHaveBeenCalledTimes(1); 
-            expect(mockUserRepository.register).toHaveBeenCalledWith( 
+            expect(mockUserRepository.createProfile).toHaveBeenCalledTimes(1); 
+            expect(mockUserRepository.createProfile).toHaveBeenCalledWith( 
                 expect.objectContaining({ 
                     name: 'Alexander', 
                     lastname: 'Mota', 
@@ -75,7 +81,7 @@ describe('ProfileService', () => {
                 }) 
             ); 
             
-            const registeredUser = mockUserRepository.register.mock.calls[0][0]; 
+            const registeredUser = mockUserRepository.createProfile.mock.calls[0][0]; 
             
             expect(registeredUser.user_id).toBeDefined(); 
             expect(registeredUser.user_id).not.toBe(''); 
@@ -91,14 +97,18 @@ describe('ProfileService', () => {
                 email: 'alex@test.com', 
                 password: 'contraseña123' 
             }; 
-            
+            mockUserValidations.validateEmail.mockResolvedValue(true); 
+
             mockBcryptHash.mockResolvedValue('hash_generado'); 
             
-            mockUserRepository.register.mockResolvedValue(42); 
+            mockUserRepository.createProfile.mockResolvedValue(42); 
             
             await service.createProfile(user); 
             
-            expect(mockUserRepository.register).toHaveBeenCalledWith( 
+            expect(mockUserValidations.validateEmail).toHaveBeenCalledWith( 
+                user.email
+            ); 
+            expect(mockUserRepository.createProfile).toHaveBeenCalledWith( 
                 expect.objectContaining({ 
                     password: 'hash_generado' 
                 }) 
