@@ -64,6 +64,50 @@ class TaskController {
     }
   };
 
+  getTareaById = async (req, res) => {
+    try {
+        const user = req.user;
+
+        if (!user) {
+            return res.status(401).json({
+                error: 'Usuario no autenticado'
+            });
+        }
+
+        const { id } = req.params;
+        const task = await this.tareasService.getTareaById(
+            id,
+            user.user_id
+        );
+
+        if (!task) {
+            return res.status(404).json({
+                error: 'Tarea no encontrada'
+            });
+        }
+
+        return res.json({
+            message: 'Tarea encontrada.',
+            task
+        });
+    } catch (error) {
+      if (error.message === 'Tarea no encontrada') {
+        return res.status(404).json({
+          error: 'Tarea no encontrada'
+        });
+      }
+
+      if (error.message === 'No tienes permiso para acceder a esta tarea') {
+        return res.status(403).json({
+          error: error.message
+        });
+      }
+
+      return res.status(500).json({
+        error: 'Error interno del servidor'
+      });
+    }
+  };
   getParentTasks = async (req, res) => {
 
     try {
@@ -157,50 +201,6 @@ class TaskController {
       });
     }
   }
-  getTareaById = async (req, res) => {
-    try {
-        const user = req.user;
-
-        if (!user) {
-            return res.status(401).json({
-                error: 'Usuario no autenticado'
-            });
-        }
-
-        const { id } = req.params;
-        const task = await this.tareasService.getTareaById(
-            id,
-            user.user_id
-        );
-
-        if (!task) {
-            return res.status(404).json({
-                error: 'Tarea no encontrada'
-            });
-        }
-
-        return res.json({
-            message: 'Tarea encontrada',
-            task
-        });
-    } catch (error) {
-      if (error.message === 'Tarea no encontrada') {
-        return res.status(404).json({
-          error: 'Tarea no encontrada'
-        });
-      }
-
-      if (error.message === 'No tienes permiso para acceder a esta tarea') {
-        return res.status(403).json({
-          error: error.message
-        });
-      }
-
-      return res.status(500).json({
-        error: 'Error interno del servidor'
-      });
-    }
-  };
   getPriorities = async (req, res) => {
 
     try {

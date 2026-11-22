@@ -58,7 +58,7 @@ class AuthController {
       }
 
       if (error.message === 'Formato email incorrecto.') {
-        return res.status(404).json({
+        return res.status(400).json({
           error: error.message
         });
       }
@@ -254,7 +254,10 @@ class AuthController {
       });
 
     } catch (error) {
-      if (error.message === 'Debes proporcionar un correo electrónico válido.' || 'Formato email incorrecto.') {
+      if (
+        error.message === 'Debes proporcionar un correo electrónico válido.' ||
+        error.message === 'Formato email incorrecto.'
+      ) {
         return res.status(400).json({
           error: error.message
         });

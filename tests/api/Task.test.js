@@ -423,7 +423,9 @@ describe('API - Tasks', () => {
 
       expect(response.status).toBe(403);
 
-      expect(response.body.task.task_id).toBe(invitationTaskId);
+      expect(response.body).toEqual({
+          error: 'No tienes permiso para acceder a esta tarea'
+      });
     });
 
     test('Una tarea inexistente devuelve 404', async () => {
