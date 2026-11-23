@@ -40,7 +40,7 @@ class ProfileController {
         });
 
     } catch (error) {
-        console.error('Error en searchUsers:', error);
+        //console.error('Error en searchUsers:', error);
 
         return res.status(500).json({
             error: 'Error interno del servidor'
@@ -218,7 +218,7 @@ class ProfileController {
 
       if (newPassword.length < 8) {
         return res.status(400).json({
-          error: 'La nueva contraseña debe tener al menos 6 caracteres'
+          error: 'La nueva contraseña debe tener al menos 8 caracteres'
         });
       }
 

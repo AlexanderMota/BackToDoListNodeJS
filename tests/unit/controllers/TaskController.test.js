@@ -94,7 +94,7 @@ describe('TaskController', () => {
             expect(mockTaskService.createTarea).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -107,7 +107,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -134,20 +134,20 @@ describe('TaskController', () => {
             expect(mockTaskService.getParentTasksByUserID).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
         test('Debe devolver 500 si el servicio lanza un error', async () => {
             mockTaskService.getParentTasksByUserID.mockRejectedValue(
-                new Error('Error interno del servidor')
+                new Error('Error interno del servidor.')
             );
 
             await controller.getParentTasks(mockRequest, mockResponse);
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -173,7 +173,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getSubTasks).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -186,7 +186,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -213,7 +213,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getTasksByCollaborating).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -226,7 +226,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -253,7 +253,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getTasksByCollabRequest).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -266,7 +266,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -293,7 +293,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getPublicTasks).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -306,7 +306,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -320,7 +320,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getTareaById)
                 .toHaveBeenCalledWith('1', mockUser.user_id);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                message: 'Tarea encontrada',
+                message: 'Tarea encontrada.',
                 task: mockTask
             });
         });
@@ -333,7 +333,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getTareaById).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -344,7 +344,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(404);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tarea no encontrada'
+                error: 'Tarea no encontrada.'
             });
         });
 
@@ -357,7 +357,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
 
@@ -375,7 +375,7 @@ describe('TaskController', () => {
 
                 expect(mockResponse.status).toHaveBeenCalledWith(500);
                 expect(mockResponse.json).toHaveBeenCalledWith({
-                    error: 'Error interno del servidor'
+                    error: 'Error interno del servidor.'
                 });
                 /*expect(consoleErrorSpy).toHaveBeenCalled();
             } finally {
@@ -406,7 +406,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getPriorities).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -419,7 +419,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -446,7 +446,7 @@ describe('TaskController', () => {
             expect(mockTaskService.getStatus).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -459,7 +459,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -468,7 +468,7 @@ describe('TaskController', () => {
         test('Debe actualizar una tarea existente', async () => {
             const updatedTask = {
                 ...mockTask,
-                name: 'Tarea actualizada'
+                name: 'Tarea actualizada.'
             };
 
             mockTaskService.updateTarea.mockResolvedValue(updatedTask);
@@ -499,7 +499,7 @@ describe('TaskController', () => {
             expect(mockTaskService.updateTarea).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -510,7 +510,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(404);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tarea no encontrada o propietario incorrecto'
+                error: 'Tarea no encontrada o propietario incorrecto.'
             });
         });
 
@@ -523,7 +523,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
 
@@ -536,7 +536,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });
@@ -565,7 +565,7 @@ describe('TaskController', () => {
             expect(mockTaskService.deleteTarea).not.toHaveBeenCalled();
             expect(mockResponse.status).toHaveBeenCalledWith(401);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         });
 
@@ -576,7 +576,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(404);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Tarea no encontrada o propietario incorrecto'
+                error: 'Tarea no encontrada o propietario incorrecto.'
             });
         });
 
@@ -589,7 +589,7 @@ describe('TaskController', () => {
 
             expect(mockResponse.status).toHaveBeenCalledWith(500);
             expect(mockResponse.json).toHaveBeenCalledWith({
-                error: 'Error interno del servidor'
+                error: 'Error interno del servidor.'
             });
         });
     });

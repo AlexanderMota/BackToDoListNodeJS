@@ -9,7 +9,7 @@ class TaskController {
 
       if (!user) {
         return res.status(401).json({
-          error: 'Usuario no autenticado'
+          error: 'Usuario no autenticado.'
         });
       }
 
@@ -43,15 +43,15 @@ class TaskController {
       });
 
     } catch (error) {
-      if (error.message === 'Tarea no encontrada') {
+      if (error.message === 'Tarea no encontrada.') {
           return res.status(404).json({
               error: error.message
           });
       }
 
       if (
-          error.message === 'No tienes permiso para acceder a esta tarea' ||
-          error.message === 'No tienes permiso para crear subtareas en esta tarea'
+          error.message === 'No tienes permiso para acceder a esta tarea.' ||
+          error.message === 'No tienes permiso para crear subtareas en esta tarea.'
       ) {
           return res.status(403).json({
               error: error.message
@@ -59,7 +59,7 @@ class TaskController {
       }
 
       return res.status(500).json({
-          error: 'Error interno del servidor'
+          error: 'Error interno del servidor.'
       });
     }
   };
@@ -70,7 +70,7 @@ class TaskController {
 
         if (!user) {
             return res.status(401).json({
-                error: 'Usuario no autenticado'
+                error: 'Usuario no autenticado.'
             });
         }
 
@@ -82,7 +82,7 @@ class TaskController {
 
         if (!task) {
             return res.status(404).json({
-                error: 'Tarea no encontrada'
+                error: 'Tarea no encontrada.'
             });
         }
 
@@ -91,20 +91,15 @@ class TaskController {
             task
         });
     } catch (error) {
-      if (error.message === 'Tarea no encontrada') {
-        return res.status(404).json({
-          error: 'Tarea no encontrada'
-        });
-      }
 
-      if (error.message === 'No tienes permiso para acceder a esta tarea') {
+      if (error.message === 'No tienes permiso para acceder a esta tarea.') {
         return res.status(403).json({
           error: error.message
         });
       }
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   };
@@ -113,7 +108,7 @@ class TaskController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const tasks = await this.tareasService.getParentTasksByUserID(user.user_id);
       
@@ -121,7 +116,7 @@ class TaskController {
     } catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -130,7 +125,7 @@ class TaskController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const { id } = req.params;
 
@@ -138,22 +133,22 @@ class TaskController {
       
       res.json({ message: 'Subtareas encontradas.', tasks });
     } catch (error) {
-      if (error.message === 'Tarea no encontrada') {
+      if (error.message === 'Tarea no encontrada.') {
         return res.status(404).json({ error: error.message });
       }
 
-      if (error.message === 'No tienes permiso para acceder a esta tarea') {
+      if (error.message === 'No tienes permiso para acceder a esta tarea.') {
         return res.status(403).json({ error: error.message });
       }
 
-      return res.status(500).json({ error: 'Error interno del servidor' });
+      return res.status(500).json({ error: 'Error interno del servidor.' });
     }
   }
   getTasksByCollaborating = async (req, res) => {
     try {
       const user = req.user;
       
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
       
       const tasks = await this.tareasService.getTasksByCollaborating(user.user_id);
 
@@ -162,7 +157,7 @@ class TaskController {
     }catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -170,7 +165,7 @@ class TaskController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const tasks = await this.tareasService.getTasksByCollabRequest(user.user_id);
 
@@ -180,7 +175,7 @@ class TaskController {
     }catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -189,7 +184,7 @@ class TaskController {
     try {
       const user = req.user;
       
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const tasks = await this.tareasService.getPublicTasks(user.user_id);
 
@@ -197,7 +192,7 @@ class TaskController {
     } catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -205,13 +200,13 @@ class TaskController {
 
     try {
       const user = req.user;
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
       const priorities = await this.tareasService.getPriorities();
       res.json({ message: 'Prioridades encontradas.', priorities });
     } catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -219,13 +214,13 @@ class TaskController {
 
     try {
       const user = req.user;
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
       const status = await this.tareasService.getStatus();
       res.json({ message: 'Status encontrados.', status });
     } catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
     }
   }
@@ -235,7 +230,7 @@ class TaskController {
     try {
       const user = req.user;
 
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const { id } = req.params;
 
@@ -247,7 +242,7 @@ class TaskController {
         Array.isArray(task)
       ) {
         return res.status(400).json({
-          error: 'El formato de la tarea no es válido'
+          error: 'El formato de la tarea no es válido.'
         });
       }
 
@@ -259,13 +254,13 @@ class TaskController {
         visibility: task.visibility }, 
         user.user_id);
 
-      if (!tareaActualizada) return res.status(404).json({ error: 'Tarea no encontrada o propietario incorrecto' });
+      if (!tareaActualizada) return res.status(404).json({ error: 'Tarea no encontrada o propietario incorrecto.' });
       
       res.json({ message: 'Tarea actualizada exitosamente.', task: tareaActualizada });
     } catch (error) {
 
       return res.status(500).json({
-          error: 'Error interno del servidor'
+          error: 'Error interno del servidor.'
       });
     }
   }
@@ -275,19 +270,19 @@ class TaskController {
     try {
       const user = req.user;
 
-      if (!user) return res.status(401).json({ error: 'Usuario no autenticado' });
+      if (!user) return res.status(401).json({ error: 'Usuario no autenticado.' });
 
       const { id } = req.params;
       const tareaEliminada = await this.tareasService.deleteTarea(id, user.user_id);
 
-      if (!tareaEliminada) return res.status(404).json({ error: 'Tarea no encontrada o propietario incorrecto' });
+      if (!tareaEliminada) return res.status(404).json({ error: 'Tarea no encontrada o propietario incorrecto.' });
 
       res.json({ message: 'Tarea eliminada exitosamente.', task: tareaEliminada });
 
     } catch (error) {
 
       return res.status(500).json({
-        error: 'Error interno del servidor'
+        error: 'Error interno del servidor.'
       });
 
     }
